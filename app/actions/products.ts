@@ -41,9 +41,15 @@ export async function getProductsAction(page = 1, pageSize = 20, search = "") {
 
     if (error) throw error;
 
+    const mappedData = data?.map((item: any) => ({
+      ...item,
+      defaultPrice: item.default_price,
+      vatRate: item.vat_rate,
+    }));
+
     return {
       success: true,
-      data: data as any[],
+      data: mappedData as Product[],
       count: count || 0,
       totalPages: Math.ceil((count || 0) / pageSize),
     };
@@ -74,12 +80,14 @@ export async function saveProductAction(data: Product) {
   try {
     let error;
     if (data.id) {
+      // Update
       const res = await supabase
         .from("products")
         .update(productData)
         .eq("id", data.id);
       error = res.error;
     } else {
+      // Insert
       const res = await supabase.from("products").insert(productData);
       error = res.error;
     }

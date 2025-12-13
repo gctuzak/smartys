@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, Building2, Users, Package, PlusCircle, Settings } from "lucide-react";
+import { 
+  LayoutDashboard, 
+  FileText, 
+  Building2, 
+  Users, 
+  Package, 
+  PlusCircle,
+  Settings
+} from "lucide-react";
 
 const navigation = [
   { name: "Teklif Oluştur", href: "/", icon: PlusCircle },
@@ -15,6 +23,7 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
+
   return (
     <div className="flex h-full w-64 flex-col bg-gray-900 text-white fixed left-0 top-0 bottom-0 overflow-y-auto z-50">
       <div className="flex h-16 shrink-0 items-center px-6 border-b border-gray-800">
@@ -25,7 +34,16 @@ export function Sidebar() {
         {navigation.map((item) => {
           const isActive = pathname === item.href;
           return (
-            <Link key={item.name} href={item.href} className={cn(isActive ? "bg-gray-800 text-white" : "text-gray-400 hover:bg-gray-800 hover:text-white", "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold transition-colors")}> 
+            <Link
+              key={item.name}
+              href={item.href}
+              className={cn(
+                isActive
+                  ? "bg-gray-800 text-white"
+                  : "text-gray-400 hover:bg-gray-800 hover:text-white",
+                "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold transition-colors"
+              )}
+            >
               <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
               {item.name}
             </Link>

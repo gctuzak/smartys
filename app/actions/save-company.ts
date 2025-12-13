@@ -17,15 +17,19 @@ export async function saveCompanyAction(data: any) {
     };
 
     if (data.id) {
+      // Update
       const { error } = await supabase
         .from("companies")
         .update(companyData)
         .eq("id", data.id);
+
       if (error) throw error;
     } else {
+      // Insert
       const { error } = await supabase
         .from("companies")
         .insert(companyData);
+
       if (error) throw error;
     }
 

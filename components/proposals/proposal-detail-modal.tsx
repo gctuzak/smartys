@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { getProposalDetailsAction } from "@/app/actions/fetch-data";
 import { listDocumentsAction, uploadDocumentAction } from "@/app/actions/documents";
 import { Modal } from "@/components/ui/modal";
-import { Loader2 } from "lucide-react";
+import { Loader2, Building2, User, MapPin, Phone, Mail, Calendar, Hash } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface ProposalDetailModalProps {
@@ -71,32 +71,24 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId }: ProposalDet
         </div>
       ) : data ? (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+          {/* Header Section */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-6">
             <div>
-              <p className="text-sm text-gray-500">Teklif No</p>
-              <p className="font-mono font-bold text-lg">#{data.proposal_no || "-"}</p>
+              <div className="flex items-center gap-2 mb-1">
+                <Hash className="w-4 h-4 text-gray-400" />
+                <h2 className="text-2xl font-bold text-gray-900">Teklif #{data.proposal_no || "-"}</h2>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Calendar className="w-4 h-4" />
+                <span>{new Date(data.created_at).toLocaleDateString("tr-TR")}</span>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Tarih</p>
-              <p className="font-medium">{new Date(data.created_at).toLocaleDateString("tr-TR")}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Müşteri / Şirket</p>
-              <p className="font-bold">{data.company?.name}</p>
-              {data.company?.email && (
-                 <p className="text-sm text-gray-600">{data.company.email}</p>
-              )}
-               {data.company?.phone && (
-                 <p className="text-sm text-gray-600">{data.company.phone}</p>
-              )}
-            </div>
-             <div className="text-right">
-              <p className="text-sm text-gray-500">Durum</p>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                data.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                data.status === 'sent' ? 'bg-blue-100 text-blue-800' :
-                data.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                'bg-red-100 text-red-800'
+            <div className="mt-4 md:mt-0">
+              <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium ${
+                data.status === 'draft' ? 'bg-gray-100 text-gray-800 border border-gray-200' :
+                data.status === 'sent' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                data.status === 'accepted' ? 'bg-green-50 text-green-700 border border-green-200' :
+                'bg-red-50 text-red-700 border border-red-200'
               }`}>
                 {data.status === 'draft' ? 'Taslak' :
                  data.status === 'sent' ? 'Gönderildi' :
@@ -105,26 +97,86 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId }: ProposalDet
             </div>
           </div>
 
-          {(data.company?.tax_no || data.company?.address) && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                   {data.company.tax_no && (
-                       <div>
-                           <span className="font-semibold">Vergi No:</span> {data.company.tax_no}
-                       </div>
-                   )}
-                   {data.company.tax_office && (
-                       <div>
-                           <span className="font-semibold">Vergi Dairesi:</span> {data.company.tax_office}
-                       </div>
-                   )}
-                   {data.company.address && (
-                       <div className="col-span-3">
-                           <span className="font-semibold">Adres:</span> {data.company.address}
-                       </div>
-                   )}
+          {/* Parties Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
+            {/* Company Details */}
+            <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+              <div className="flex items-center gap-2 text-gray-900 font-semibold border-b border-gray-200 pb-3 mb-4">
+                <Building2 className="w-5 h-5 text-blue-600" />
+                <h3>Müşteri Bilgileri</h3>
               </div>
-          )}
+              {data.company ? (
+                <div className="space-y-4 text-sm">
+                  <div>
+                    <p className="font-bold text-lg text-gray-900">{data.company.name}</p>
+                    {data.company.tax_no && (
+                       <p className="text-gray-500 text-xs mt-1">VKN: {data.company.tax_no} {data.company.tax_office && `• ${data.company.tax_office} VD`}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2.5 text-gray-600">
+                    {data.company.address && (
+                      <div className="flex gap-3 items-start group">
+                        <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                        <span className="leading-relaxed">{data.company.address}</span>
+                      </div>
+                    )}
+                    {data.company.phone && (
+                      <div className="flex gap-3 items-center group">
+                        <Phone className="w-4 h-4 shrink-0 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                        <span>{data.company.phone}</span>
+                      </div>
+                    )}
+                    {data.company.email && (
+                      <div className="flex gap-3 items-center group">
+                        <Mail className="w-4 h-4 shrink-0 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                        <span>{data.company.email}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-500 italic text-sm">Şirket bilgisi bulunamadı.</p>
+              )}
+            </div>
 
+            {/* Person Details */}
+            <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+              <div className="flex items-center gap-2 text-gray-900 font-semibold border-b border-gray-200 pb-3 mb-4">
+                <User className="w-5 h-5 text-purple-600" />
+                <h3>İlgili Kişi</h3>
+              </div>
+              {data.person ? (
+                <div className="space-y-4 text-sm">
+                  <div>
+                    <p className="font-bold text-lg text-gray-900">{data.person.first_name} {data.person.last_name}</p>
+                    {data.person.title && (
+                       <p className="text-purple-600 font-medium text-xs mt-1 uppercase tracking-wide">{data.person.title}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2.5 text-gray-600">
+                    {data.person.phone && (
+                      <div className="flex gap-3 items-center group">
+                        <Phone className="w-4 h-4 shrink-0 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                        <span>{data.person.phone}</span>
+                      </div>
+                    )}
+                    {data.person.email && (
+                      <div className="flex gap-3 items-center group">
+                        <Mail className="w-4 h-4 shrink-0 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                        <span>{data.person.email}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-500 italic text-sm">İlgili kişi bulunamadı.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Items Table */}
           <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
@@ -177,6 +229,7 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId }: ProposalDet
             </Table>
         </div>
 
+        {/* Footer Total */}
         <div className="flex justify-end border-t pt-4">
           <div className="text-right space-y-1">
               <div className="flex justify-end items-center gap-4 text-gray-600">
@@ -210,6 +263,7 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId }: ProposalDet
               </div>
             </div>
           </div>
+          {/* Documents */}
           <div className="border-t pt-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Dokümanlar</h3>

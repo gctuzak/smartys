@@ -19,13 +19,21 @@ export const metadata: Metadata = {
   description: "AI Powered Proposal Builder",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
+      >
         <div className="flex min-h-screen">
           <Sidebar />
-          <main className="flex-1 ml-64 p-8">{children}</main>
+          <main className="flex-1 ml-64 p-8">
+            {children}
+          </main>
         </div>
         <Toaster />
       </body>

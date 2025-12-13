@@ -4,6 +4,7 @@ import * as schema from './schema';
 import dotenv from 'dotenv';
 import dns from 'dns';
 
+// Fix for Supabase IPv6 connection issues
 if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder('ipv4first');
 }

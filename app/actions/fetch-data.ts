@@ -36,6 +36,7 @@ export async function getProposalsAction(page = 1, pageSize = 20, search = "") {
 
     if (search) {
       if (!isNaN(Number(search))) {
+        // If search is a number, try to match proposal_no
         query = query.or(`proposal_no.eq.${search},status.ilike.%${search}%`);
       } else {
         query = query.ilike("status", `%${search}%`);
@@ -170,16 +171,22 @@ export async function getProposalDetailsAction(id: string) {
 
 export async function deleteProposalAction(id: string) {
     try {
+        // First delete items
         const { error: itemsError } = await supabase
             .from("proposal_items")
             .delete()
             .eq("proposal_id", id);
+        
         if (itemsError) throw itemsError;
+
+        // Then delete proposal
         const { error } = await supabase
             .from("proposals")
             .delete()
             .eq("id", id);
+        
         if (error) throw error;
+
         return { success: true };
     } catch (error) {
         console.error("Delete Proposal Error:", error);
@@ -189,27 +196,37 @@ export async function deleteProposalAction(id: string) {
 
 export async function deleteCompanyAction(id: string) {
     try {
+        // Check if company has proposals
         const { count, error: checkError } = await supabase
             .from("proposals")
             .select("id", { count: "exact", head: true })
             .eq("company_id", id);
+        
         if (checkError) throw checkError;
+
         if (count && count > 0) {
             return { success: false, error: "Bu şirkete ait teklifler var. Önce teklifleri silmelisiniz." };
         }
+
+        // Check if company has persons
         const { count: personsCount, error: personsCheckError } = await supabase
             .from("persons")
             .select("id", { count: "exact", head: true })
             .eq("company_id", id);
+
         if (personsCheckError) throw personsCheckError;
+
         if (personsCount && personsCount > 0) {
             return { success: false, error: "Bu şirkete bağlı kişiler var. Önce kişileri silmelisiniz." };
         }
+
         const { error } = await supabase
             .from("companies")
             .delete()
             .eq("id", id);
+        
         if (error) throw error;
+
         return { success: true };
     } catch (error) {
         console.error("Delete Company Error:", error);
@@ -219,19 +236,25 @@ export async function deleteCompanyAction(id: string) {
 
 export async function deletePersonAction(id: string) {
     try {
+        // Check if person has proposals
         const { count, error: checkError } = await supabase
             .from("proposals")
             .select("id", { count: "exact", head: true })
             .eq("person_id", id);
+        
         if (checkError) throw checkError;
+
         if (count && count > 0) {
             return { success: false, error: "Bu kişiye ait teklifler var. Önce teklifleri silmelisiniz." };
         }
+
         const { error } = await supabase
             .from("persons")
             .delete()
             .eq("id", id);
+        
         if (error) throw error;
+
         return { success: true };
     } catch (error) {
         console.error("Delete Person Error:", error);

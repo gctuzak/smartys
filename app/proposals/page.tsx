@@ -5,7 +5,7 @@ import { getProposalsAction, deleteProposalAction } from "@/app/actions/fetch-da
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Trash2, Loader2, FileText } from "lucide-react";
+import { Search, Trash2, Loader2, FileText, Eye } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -39,6 +39,7 @@ export default function ProposalsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Bu teklifi ve ilgili tüm kalemleri silmek istediğinize emin misiniz?")) return;
+    
     const result = await deleteProposalAction(id);
     if (result.success) {
       toast.success("Teklif silindi");
@@ -155,6 +156,15 @@ export default function ProposalsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        {/* 
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-gray-500 hover:text-blue-600"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        */}
                         <Button
                           variant="ghost"
                           size="icon"

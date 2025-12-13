@@ -10,7 +10,7 @@ export const companies = pgTable("companies", {
   phone: text("phone"),
   email: text("email"),
   website: text("website"),
-  contactInfo: jsonb("contact_info"),
+  contactInfo: jsonb("contact_info"), // Keeping for legacy/extra data
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

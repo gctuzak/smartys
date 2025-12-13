@@ -1,0 +1,34 @@
+2025-12-12T13:33:04.321Z - connect EHOSTUNREACH 2a05:d018:135e:165b:870:2a0a:2d89:f67f:5432 - Local (:::65457)
+Error: connect EHOSTUNREACH 2a05:d018:135e:165b:870:2a0a:2d89:f67f:5432 - Local (:::65457)
+    at internalConnect (node:net:1110:16)
+    at defaultTriggerAsyncIdScope (node:internal/async_hooks:472:18)
+    at GetAddrInfoReqWrap.emitLookup [as callback] (node:net:1523:9)
+    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:133:8)
+    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)
+---
+2025-12-12T13:33:36.151Z - connect EHOSTUNREACH 2a05:d018:135e:165b:870:2a0a:2d89:f67f:5432 - Local (:::65506)
+Error: connect EHOSTUNREACH 2a05:d018:135e:165b:870:2a0a:2d89:f67f:5432 - Local (:::65506)
+    at internalConnect (node:net:1110:16)
+    at defaultTriggerAsyncIdScope (node:internal/async_hooks:472:18)
+    at GetAddrInfoReqWrap.emitLookup [as callback] (node:net:1523:9)
+    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:133:8)
+    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)
+---
+2025-12-12T13:35:57.585Z - connect EHOSTUNREACH 2a05:d018:135e:165b:870:2a0a:2d89:f67f:5432 - Local (:::49520)
+Error: connect EHOSTUNREACH 2a05:d018:135e:165b:870:2a0a:2d89:f67f:5432 - Local (:::49520)
+    at internalConnect (node:net:1110:16)
+    at defaultTriggerAsyncIdScope (node:internal/async_hooks:472:18)
+    at GetAddrInfoReqWrap.emitLookup [as callback] (node:net:1523:9)
+    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:133:8)
+    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)
+---
+2025-12-12T13:36:17.615Z - connect EHOSTUNREACH 2a05:d018:135e:165b:870:2a0a:2d89:f67f:5432 - Local (:::49603)
+Error: connect EHOSTUNREACH 2a05:d018:135e:165b:870:2a0a:2d89:f67f:5432 - Local (:::49603)
+    at internalConnect (node:net:1110:16)
+    at defaultTriggerAsyncIdScope (node:internal/async_hooks:472:18)
+    at GetAddrInfoReqWrap.emitLookup [as callback] (node:net:1523:9)
+    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:133:8)
+    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)
+---
+2025-12-12T13:44:08.442Z - [object Object]
+---

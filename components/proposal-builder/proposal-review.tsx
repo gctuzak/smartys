@@ -57,6 +57,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
       [field]: value,
     };
     
+    // Recalculate totals if quantity or unit price changes
     if (field === "quantity" || field === "unitPrice") {
       const qty = Number(newItems[index].quantity);
       const price = Number(newItems[index].unitPrice);
@@ -83,6 +84,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
   const handleProductSelect = (index: number, product: ProductSearchResult) => {
     const newItems = [...data.proposal.items];
     
+    // Update fields from product
     newItems[index] = {
       ...newItems[index],
       description: product.name,
@@ -90,6 +92,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
       unitPrice: product.defaultPrice ? Number(product.defaultPrice) : newItems[index].unitPrice,
     };
 
+    // Recalculate total
     const qty = Number(newItems[index].quantity);
     const price = Number(newItems[index].unitPrice);
     newItems[index].totalPrice = qty * price;
@@ -150,6 +153,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
         toast.success("Teklif başarıyla kaydedildi!");
         onSuccess();
       } else {
+        // Type narrowing for the error case
         const errorMsg = "error" in result ? (result as { error: string }).error : "Kaydetme başarısız oldu.";
         toast.error(errorMsg);
       }
@@ -175,10 +179,12 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
       ...prev,
       proposal: { ...prev.proposal, items: normalizedItems, totalAmount, vatRate, vatAmount, grandTotal },
     }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Customer Info Section */}
       <Card>
         <CardHeader>
           <CardTitle>Şirket Bilgileri</CardTitle>
@@ -254,6 +260,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
         </CardContent>
       </Card>
 
+      {/* Person Info Section */}
       <Card>
         <CardHeader>
           <CardTitle>Kişi Bilgileri</CardTitle>
@@ -294,6 +301,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
         </CardContent>
       </Card>
 
+      {/* Proposal Items Section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Teklif Kalemleri</CardTitle>
@@ -424,6 +432,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
         </CardContent>
       </Card>
 
+      {/* Action Buttons */}
       <div className="flex justify-end gap-4">
         <Button 
             variant="outline" 

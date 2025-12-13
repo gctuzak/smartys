@@ -16,7 +16,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Dosya bulunamadı." }, { status: 400 });
     }
 
-    const saved = await saveFileToPublicDocuments({ file, type, proposalId, companyId, personId });
+    const saved = await saveFileToPublicDocuments({
+      file,
+      type,
+      proposalId,
+      companyId,
+      personId,
+    });
 
     const supabaseUrl = process.env.SUPABASE_URL!;
     const supabaseKey = process.env.SUPABASE_ANON_KEY!;

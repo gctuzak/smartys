@@ -20,6 +20,7 @@ export default function PersonsPage() {
 
   const fetchPersons = useCallback(async () => {
     setLoading(true);
+    // Passing undefined for companyId to fetch all persons
     const result = await getPersonsAction(undefined, page, 20, search);
     if (result.success) {
       setPersons(result.data || []);
@@ -110,7 +111,11 @@ export default function PersonsPage() {
                 </TableRow>
               ) : (
                 persons.map((person) => (
-                  <TableRow key={person.id}>
+                  <TableRow 
+                    key={person.id} 
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => handleEdit(person)}
+                  >
                     <TableCell className="font-medium flex items-center gap-2">
                       <User className="w-4 h-4 text-gray-400" />
                       {person.first_name} {person.last_name}
@@ -125,7 +130,7 @@ export default function PersonsPage() {
                     <TableCell>{person.phone || "-"}</TableCell>
                     <TableCell>{person.email || "-"}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button
                           variant="ghost"
                           size="icon"

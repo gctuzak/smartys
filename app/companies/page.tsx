@@ -110,7 +110,11 @@ export default function CompaniesPage() {
                 </TableRow>
               ) : (
                 companies.map((company) => (
-                  <TableRow key={company.id}>
+                  <TableRow 
+                    key={company.id} 
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => handleEdit(company)}
+                  >
                     <TableCell className="font-medium flex items-center gap-2">
                       <Building2 className="w-4 h-4 text-gray-400" />
                       {company.name}
@@ -122,7 +126,7 @@ export default function CompaniesPage() {
                       {new Date(company.created_at).toLocaleDateString("tr-TR")}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button
                           variant="ghost"
                           size="icon"

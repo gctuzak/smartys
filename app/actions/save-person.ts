@@ -15,15 +15,19 @@ export async function savePersonAction(data: any) {
     };
 
     if (data.id) {
+      // Update
       const { error } = await supabase
         .from("persons")
         .update(personData)
         .eq("id", data.id);
+
       if (error) throw error;
     } else {
+      // Insert
       const { error } = await supabase
         .from("persons")
         .insert(personData);
+
       if (error) throw error;
     }
 

@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "GitHub": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": ""
+      }
+    },
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-postgrest",
+        "--apiUrl",
+        "https://epwkyrexqaifeaqklahj.supabase.co/rest/v1",
+        "--apiKey",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwd2t5cmV4cWFpZmVhcWtsYWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1MzcyMjQsImV4cCI6MjA4MTExMzIyNH0.58uTAuwLbya-ummeOZqsR8HO96Atubz4auSdhf5haGE",
+        "--schema",
+        "public"
+      ]
+    }
+  }
+}
