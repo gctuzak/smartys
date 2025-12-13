@@ -1,24 +1,51 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getProposalDetailsAction } from "@/app/actions/fetch-data";
 import { listDocumentsAction, uploadDocumentAction } from "@/app/actions/documents";
+import { updateProposalStatusAction } from "@/app/actions/update-proposal-status";
 import { Modal } from "@/components/ui/modal";
-import { Loader2, Building2, User, MapPin, Phone, Mail, Calendar, Hash } from "lucide-react";
+import { Loader2, Building2, User, MapPin, Phone, Mail, Calendar, Hash, Check } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+
+const PROPOSAL_STATUSES = [
+  { value: 'draft', label: 'Taslak Teklif', color: 'bg-gray-100 text-gray-800 border-gray-200' },
+  { value: 'sent', label: 'Gönderilen Teklif', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  { value: 'needs_revision', label: 'Revize edilecek teklif', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+  { value: 'converted_to_order', label: 'Siparişe dönüştü', color: 'bg-green-50 text-green-700 border-green-200' },
+];
 
 interface ProposalDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   proposalId: string | null;
+  onUpdate?: () => void;
 }
 
-export function ProposalDetailModal({ isOpen, onClose, proposalId }: ProposalDetailModalProps) {
+export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: ProposalDetailModalProps) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (isOpen && proposalId) {
@@ -27,6 +54,7 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId }: ProposalDet
         const result = await getProposalDetailsAction(proposalId);
         if (result.success) {
           setData(result.data);
+          setSelectedStatus(result.data.status);
           const docs = await listDocumentsAction({ proposalId });
           if (docs.success) setDocuments(docs.data || []);
         }
@@ -35,9 +63,34 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId }: ProposalDet
       fetchData();
     } else {
       setData(null);
+      setSelectedStatus(null);
       setDocuments([]);
     }
   }, [isOpen, proposalId]);
+
+  const handleStatusChange = (newStatus: string) => {
+    setSelectedStatus(newStatus);
+    setIsDropdownOpen(false);
+  };
+
+  const handleSaveChanges = async () => {
+    if (!data || !selectedStatus || updatingStatus) return;
+    setUpdatingStatus(true);
+    try {
+      const result = await updateProposalStatusAction(data.id, selectedStatus);
+      if (result.success) {
+        setData((prev: any) => ({ ...prev, status: selectedStatus }));
+        toast.success("Değişiklikler başarıyla kaydedildi");
+        if (onUpdate) onUpdate();
+      } else {
+        toast.error("Değişiklikler kaydedilemedi");
+      }
+    } catch (error) {
+      toast.error("Bir hata oluştu");
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -83,17 +136,58 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId }: ProposalDet
                 <span>{new Date(data.created_at).toLocaleDateString("tr-TR")}</span>
               </div>
             </div>
-            <div className="mt-4 md:mt-0">
-              <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium ${
-                data.status === 'draft' ? 'bg-gray-100 text-gray-800 border border-gray-200' :
-                data.status === 'sent' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                data.status === 'accepted' ? 'bg-green-50 text-green-700 border border-green-200' :
-                'bg-red-50 text-red-700 border border-red-200'
-              }`}>
-                {data.status === 'draft' ? 'Taslak' :
-                 data.status === 'sent' ? 'Gönderildi' :
-                 data.status === 'accepted' ? 'Onaylandı' : data.status}
-              </span>
+            <div className="mt-4 md:mt-0 flex items-center gap-2">
+              {data.status !== selectedStatus && (
+                <Button 
+                  onClick={handleSaveChanges} 
+                  disabled={updatingStatus}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {updatingStatus ? (
+                    <>
+                      <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                      Kaydediliyor...
+                    </>
+                  ) : (
+                    "Değişiklikleri Kaydet"
+                  )}
+                </Button>
+              )}
+              <div className="relative inline-block text-left" ref={dropdownRef}>
+                <button 
+                  disabled={updatingStatus}
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                  PROPOSAL_STATUSES.find(s => s.value === selectedStatus)?.color || 'bg-gray-100 text-gray-800 border-gray-200'
+                }`}>
+                  {PROPOSAL_STATUSES.find(s => s.value === selectedStatus)?.label || selectedStatus}
+                </button>
+                
+                {/* Dropdown Menu */}
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                    <div className="py-1">
+                      {PROPOSAL_STATUSES.map((status) => (
+                        <button
+                          key={status.value}
+                          onClick={() => handleStatusChange(status.value)}
+                          className={`group flex w-full items-center px-4 py-2 text-sm ${
+                            selectedStatus === status.value ? 'bg-gray-100 text-gray-900' : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {selectedStatus === status.value && (
+                            <Check className="mr-3 h-4 w-4 text-blue-600" aria-hidden="true" />
+                          )}
+                          <span className={selectedStatus === status.value ? 'font-medium ml-0' : 'ml-7'}>
+                            {status.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
