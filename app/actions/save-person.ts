@@ -12,6 +12,7 @@ export async function savePersonAction(data: any) {
       email: data.email,
       phone: data.phone,
       title: data.title,
+      representative_id: data.representative_id || null,
     };
 
     if (data.id) {

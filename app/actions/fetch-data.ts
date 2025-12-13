@@ -194,6 +194,53 @@ export async function deleteProposalAction(id: string) {
     }
 }
 
+export async function getUsersAction(page = 1, pageSize = 20, search = "") {
+  try {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let query = supabase
+      .from("users")
+      .select("*", { count: "exact" });
+
+    if (search) {
+      query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`);
+    }
+
+    const { data, count, error } = await query
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    return {
+      success: true,
+      data: data as any[],
+      count: count || 0,
+      totalPages: Math.ceil((count || 0) / pageSize),
+    };
+  } catch (error) {
+    console.error("Get Users Error:", error);
+    return { success: false, error: "Kullanıcılar getirilemedi." };
+  }
+}
+
+export async function deleteUserAction(id: string) {
+    try {
+        const { error } = await supabase
+            .from("users")
+            .delete()
+            .eq("id", id);
+        
+        if (error) throw error;
+
+        return { success: true };
+    } catch (error) {
+        console.error("Delete User Error:", error);
+        return { success: false, error: "Kullanıcı silinemedi." };
+    }
+}
+
 export async function deleteCompanyAction(id: string) {
     try {
         // Check if company has proposals

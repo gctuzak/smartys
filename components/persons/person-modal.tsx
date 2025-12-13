@@ -5,7 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { savePersonAction } from "@/app/actions/save-person";
-import { getCompaniesAction } from "@/app/actions/fetch-data";
+import { getCompaniesAction, getUsersAction } from "@/app/actions/fetch-data";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -19,6 +19,7 @@ interface PersonModalProps {
 export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalProps) {
   const [loading, setLoading] = useState(false);
   const [companies, setCompanies] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     company_id: "",
     first_name: "",
@@ -26,18 +27,26 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
     email: "",
     phone: "",
     title: "",
+    representative_id: "",
   });
 
   useEffect(() => {
-    // Fetch companies for the dropdown
-    const fetchCompanies = async () => {
-      const result = await getCompaniesAction(1, 100); // Fetch first 100 companies
-      if (result.success) {
-        setCompanies(result.data || []);
+    // Fetch companies and users for the dropdowns
+    const fetchData = async () => {
+      const [companiesResult, usersResult] = await Promise.all([
+        getCompaniesAction(1, 100),
+        getUsersAction(1, 100)
+      ]);
+
+      if (companiesResult.success) {
+        setCompanies(companiesResult.data || []);
+      }
+      if (usersResult.success) {
+        setUsers(usersResult.data || []);
       }
     };
     if (isOpen) {
-      fetchCompanies();
+      fetchData();
     }
   }, [isOpen]);
 
@@ -50,6 +59,7 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
         email: person.email || "",
         phone: person.phone || "",
         title: person.title || "",
+        representative_id: person.representative_id || "",
       });
     } else {
       setFormData({
@@ -59,6 +69,7 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
         email: "",
         phone: "",
         title: "",
+        representative_id: "",
       });
     }
   }, [person, isOpen]);
@@ -178,6 +189,23 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
             placeholder="E-posta adresi"
             type="email"
           />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium mb-1 block">Müşteri Temsilcisi</label>
+          <select
+            name="representative_id"
+            value={formData.representative_id}
+            onChange={handleChange}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="">Seçiniz...</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.first_name} {user.last_name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="flex justify-end gap-2 pt-4">

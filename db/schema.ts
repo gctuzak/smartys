@@ -1,6 +1,16 @@
 import { pgTable, uuid, text, jsonb, timestamp, decimal, integer, serial } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
+export const users = pgTable("users", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email").notNull().unique(),
+  phone: text("phone"),
+  role: text("role").default("representative"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const companies = pgTable("companies", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
@@ -10,6 +20,7 @@ export const companies = pgTable("companies", {
   phone: text("phone"),
   email: text("email"),
   website: text("website"),
+  representativeId: uuid("representative_id").references(() => users.id),
   contactInfo: jsonb("contact_info"), // Keeping for legacy/extra data
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -22,6 +33,7 @@ export const persons = pgTable("persons", {
   email: text("email"),
   phone: text("phone"),
   title: text("title"),
+  representativeId: uuid("representative_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -66,16 +78,29 @@ export const documents = pgTable("documents", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const companiesRelations = relations(companies, ({ many }) => ({
+export const usersRelations = relations(users, ({ many }) => ({
+  companies: many(companies),
+  persons: many(persons),
+}));
+
+export const companiesRelations = relations(companies, ({ many, one }) => ({
   proposals: many(proposals),
   persons: many(persons),
   documents: many(documents),
+  representative: one(users, {
+    fields: [companies.representativeId],
+    references: [users.id],
+  }),
 }));
 
 export const personsRelations = relations(persons, ({ one, many }) => ({
   company: one(companies, {
     fields: [persons.companyId],
     references: [companies.id],
+  }),
+  representative: one(users, {
+    fields: [persons.representativeId],
+    references: [users.id],
   }),
   proposals: many(proposals),
   documents: many(documents),

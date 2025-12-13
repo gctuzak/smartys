@@ -13,6 +13,7 @@ export async function saveCompanyAction(data: any) {
       phone: data.phone,
       email: data.email,
       website: data.website,
+      representative_id: data.representative_id || null,
       contact_info: data.contact_info || {},
     };
 

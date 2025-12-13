@@ -10,7 +10,8 @@ import {
   Users, 
   Package, 
   PlusCircle,
-  Settings
+  Settings,
+  UserCheck
 } from "lucide-react";
 
 const navigation = [
@@ -18,6 +19,7 @@ const navigation = [
   { name: "Teklifler", href: "/proposals", icon: FileText },
   { name: "Şirketler", href: "/companies", icon: Building2 },
   { name: "Kişiler", href: "/persons", icon: Users },
+  { name: "Temsilciler", href: "/users", icon: UserCheck },
   { name: "Ürün Yönetimi", href: "/products", icon: Package },
 ];
 

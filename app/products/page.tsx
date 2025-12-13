@@ -118,7 +118,11 @@ export default function ProductsPage() {
                   </TableRow>
                 ) : (
                   products.map((product) => (
-                    <TableRow key={product.id}>
+                    <TableRow 
+                      key={product.id}
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleEdit(product)}
+                    >
                       <TableCell className="font-mono text-xs">{product.code || "-"}</TableCell>
                       <TableCell className="font-medium">
                         <div>{product.name}</div>
@@ -139,7 +143,7 @@ export default function ProductsPage() {
                       </TableCell>
                       <TableCell>%{product.vatRate}</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button
                             variant="ghost"
                             size="icon"

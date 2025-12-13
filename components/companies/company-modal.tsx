@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { saveCompanyAction } from "@/app/actions/save-company";
+import { getUsersAction } from "@/app/actions/fetch-data";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -17,6 +18,7 @@ interface CompanyModalProps {
 
 export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyModalProps) {
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     tax_no: "",
@@ -25,7 +27,21 @@ export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyMod
     phone: "",
     email: "",
     website: "",
+    representative_id: "",
   });
+
+  useEffect(() => {
+    // Fetch users for the dropdown
+    const fetchUsers = async () => {
+      const result = await getUsersAction(1, 100); // Fetch first 100 users
+      if (result.success) {
+        setUsers(result.data || []);
+      }
+    };
+    if (isOpen) {
+      fetchUsers();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (company) {
@@ -37,6 +53,7 @@ export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyMod
         phone: company.phone || "",
         email: company.email || "",
         website: company.website || "",
+        representative_id: company.representative_id || "",
       });
     } else {
       setFormData({
@@ -47,11 +64,12 @@ export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyMod
         phone: "",
         email: "",
         website: "",
+        representative_id: "",
       });
     }
   }, [company, isOpen]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -163,6 +181,23 @@ export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyMod
             onChange={handleChange}
             placeholder="https://..."
           />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium mb-1 block">Müşteri Temsilcisi</label>
+          <select
+            name="representative_id"
+            value={formData.representative_id}
+            onChange={handleChange}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="">Seçiniz...</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.first_name} {user.last_name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="flex justify-end gap-2 pt-4">
