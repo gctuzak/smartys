@@ -1,0 +1,108 @@
+"use server";
+
+import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
+import { revalidatePath } from "next/cache";
+
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+const productSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(2, "Ürün adı en az 2 karakter olmalıdır"),
+  code: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
+  unit: z.string().optional().nullable(),
+  cost: z.coerce.number().min(0).optional().nullable(),
+  defaultPrice: z.coerce.number().min(0).optional().nullable(),
+  currency: z.string().default("EUR"),
+  vatRate: z.coerce.number().min(0).default(20),
+});
+
+export type Product = z.infer<typeof productSchema>;
+
+export async function getProductsAction(page = 1, pageSize = 20, search = "") {
+  try {
+    let query = supabase
+      .from("products")
+      .select("*", { count: "exact" });
+
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%`);
+    }
+
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, count, error } = await query
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    return {
+      success: true,
+      data: data as any[],
+      count: count || 0,
+      totalPages: Math.ceil((count || 0) / pageSize),
+    };
+  } catch (error) {
+    console.error("Get Products Error:", error);
+    return { success: false, error: "Ürünler getirilemedi." };
+  }
+}
+
+export async function saveProductAction(data: Product) {
+  const result = productSchema.safeParse(data);
+
+  if (!result.success) {
+    return { success: false, error: "Geçersiz veri formatı" };
+  }
+
+  const productData = {
+    name: result.data.name,
+    code: result.data.code,
+    description: result.data.description,
+    unit: result.data.unit,
+    cost: result.data.cost,
+    default_price: result.data.defaultPrice,
+    currency: result.data.currency,
+    vat_rate: result.data.vatRate,
+  };
+
+  try {
+    let error;
+    if (data.id) {
+      const res = await supabase
+        .from("products")
+        .update(productData)
+        .eq("id", data.id);
+      error = res.error;
+    } else {
+      const res = await supabase.from("products").insert(productData);
+      error = res.error;
+    }
+
+    if (error) throw error;
+
+    revalidatePath("/products");
+    return { success: true };
+  } catch (error) {
+    console.error("Save Product Error:", error);
+    return { success: false, error: "Ürün kaydedilemedi." };
+  }
+}
+
+export async function deleteProductAction(id: string) {
+  try {
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) throw error;
+
+    revalidatePath("/products");
+    return { success: true };
+  } catch (error) {
+    console.error("Delete Product Error:", error);
+    return { success: false, error: "Ürün silinemedi." };
+  }
+}
