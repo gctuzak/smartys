@@ -83,27 +83,41 @@ export async function parseProposalText(text: string, opts?: { forceAI?: boolean
             "",
             "GÖREVLERİN:",
             "1. Müşteri/Şirket ve İlgili Kişi Bilgilerini Bul:",
-            "   - 'Sayın', 'Müşteri', 'Firma' gibi anahtar kelimelere dikkat et.",
+            "   - 'Sayın', 'Müşteri', 'Firma', 'Alıcı', 'Teklif Verilen' gibi anahtar kelimelere dikkat et.",
             "   - Şirket Adı (Tüzel Kişilik) ile Kişi Adını (İlgili Şahıs) birbirinden AYIR.",
+            "   - Şirket adları genellikle 'A.Ş.', 'Ltd. Şti.', 'Yapı', 'Mimarlık', 'Mühendislik', 'Ticaret', 'Sanayi' gibi ekler içerir.",
+            "   - Kişi adları genellikle 'Ad Soyad' formatındadır ve unvan içerebilir.",
             "   - Örnek: 'Sayın Ahmet Yılmaz - ABC Yapı A.Ş.' ise -> Person: Ahmet Yılmaz, Company: ABC Yapı A.Ş.",
             "   - Sadece kişi varsa Company null olabilir. Sadece şirket varsa Person null olabilir.",
-            "   - İletişim bilgilerini (Tel, E-posta) ilgili alana koy.",
+            "   - İletişim bilgilerini (Tel, E-posta, Adres) ilgili alana koy.",
+            "   - ÖZEL DURUM (Tablo Başlıkları): Metin içinde 'Adı', 'Şirket', 'Proje' gibi etiketlerin hemen yanında veya altındaki değerleri eşleştir:",
+            "     * 'Adı' -> Person Name (örn: 'Adı Arif Üzgün')",
+            "     * 'Şirket' -> Company Name (örn: 'Şirket Acıbadem Proje Yönetimi')",
+            "     * 'Proje' -> Project Name (örn: 'Proje Acıbadem Maslak Hastanesi')",
+            "     * Bu format genellikle satır başlarında 'Etiket Değer' veya 'Etiket | Değer' şeklinde görünür.",
             "",
-            "2. Teklif Kalemlerini (Tabloyu) Bul:",
-            "   - Tablo başlıkları (Açıklama, Miktar, Birim, Fiyat vb.) olmayabilir. Veri tipine göre tahmin et.",
+            "2. Proje Bilgisini Bul:",
+            "   - 'Proje:', 'Project:', 'Konu:', 'İşin Adı:', 'İş Tanımı:', 'Ref:' gibi ifadeleri ara.",
+            "   - Bu bilgiyi company.contactInfo.project alanına yaz.",
+            "",
+            "3. Teklif Kalemlerini (Tabloyu) Bul:",
+            "   - Tablo başlıkları DAİMA 'AÇIKLAMA', 'FİYAT' ve 'TUTAR' sütunlarını içerir.",
+            "   - Bu başlıkların (header) ALTINDAKİ satırlar teklif kalemleridir.",
+            "   - GEÇERLİ KALEM KURALI: Bir satırın kalem olması için 'Fiyat' (Unit Price) ve 'Tutar' (Total Price) alanlarının BOŞ OLMAMASI (0'dan büyük olması) gerekir.",
+            "   - Eğer Fiyat veya Tutar boşsa, o satırı yoksay (ignore).",
             "   - Genellikle: Sol tarafta metin (Açıklama), sağ tarafta sayılar (Miktar, Fiyat, Tutar) bulunur.",
             "   - EN / BOY / ADET Ayrıştırma:",
             "     * Eğer ayrı sütunlarda (En, Boy, Adet) varsa bunları al.",
             "     * Eğer yoksa, Açıklama sütununda '100x200', '100*200', '100 x 200 cm' gibi ölçüler ara ve bunları En=100, Boy=200 olarak ayıkla.",
             "     * attributes: { enCm: number, boyCm: number, adet: number } formatında ekle.",
             "",
-            "3. Sayısal Değerler:",
+            "4. Sayısal Değerler:",
             "   - Para birimini (TRY, USD, EUR, GBP) sembollerden veya metinden tespit et.",
             "   - '$' görürsen 'USD', '€' görürsen 'EUR', '£' görürsen 'GBP', 'TL' veya '₺' görürsen 'TRY' olarak belirle.",
             "   - JSON çıktısında sayıları STRING değil, NUMBER (tırnaksız) olarak ver. (Örn: 1250.50).",
             "   - Türkçe format (1.250,50) veya İngilizce format (1,250.50) olabilir, sen bunu standart sayıya çevir.",
             "",
-            "4. Başlık/Seperatör Satırları:",
+            "5. Başlık/Seperatör Satırları:",
             "   - Tablo başlıkları (Description, Qty, Price vb.) hariç, ara başlıkları veya ayırıcı satırları İÇERİ ALMA (ignore et).",
             "   - Sadece ürün/hizmet kalemlerini listele.",
             "",
@@ -174,10 +188,17 @@ export async function parseProposalText(text: string, opts?: { forceAI?: boolean
         finalName = (info.company as string) || null;
     }
 
+    // Clean contact info (remove nulls)
+    const rawContact = validatedData.company.contactInfo as Record<string, unknown>;
+    const cleanContact: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(rawContact)) {
+        if (v !== null) cleanContact[k] = v;
+    }
+
     return {
       company: { 
         name: finalName,
-        contactInfo: validatedData.company.contactInfo 
+        contactInfo: cleanContact 
       },
       person: validatedData.person ? {
         name: validatedData.person.name,

@@ -34,11 +34,13 @@ export function UploadZone({ onFileSelect, isUploading }: UploadZoneProps) {
         if (
           file.type ===
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-          file.name.toLowerCase().endsWith(".xlsx")
+          file.name.toLowerCase().endsWith(".xlsx") ||
+          file.type === "application/pdf" ||
+          file.name.toLowerCase().endsWith(".pdf")
         ) {
           onFileSelect(file);
         } else {
-          toast.error("Lütfen yalnızca Excel (.xlsx) dosyası yükleyin.");
+          toast.error("Lütfen Excel (.xlsx) veya PDF dosyası yükleyin.");
         }
       }
     },
@@ -69,7 +71,7 @@ export function UploadZone({ onFileSelect, isUploading }: UploadZoneProps) {
         id="file-upload"
         type="file"
         className="hidden"
-        accept=".xlsx"
+        accept=".xlsx,.pdf"
         onChange={handleFileInput}
         disabled={isUploading}
       />
@@ -79,7 +81,7 @@ export function UploadZone({ onFileSelect, isUploading }: UploadZoneProps) {
         </div>
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
-            {isUploading ? "Dosya Analiz Ediliyor..." : "Excel Dosyasını Yükle"}
+            {isUploading ? "Dosya Analiz Ediliyor..." : "Excel veya PDF Dosyasını Yükle"}
           </h3>
           <p className="text-sm text-gray-500 mt-1">
             {isUploading

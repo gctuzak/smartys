@@ -5,6 +5,7 @@ import { UploadZone } from "@/components/proposal-builder/upload-zone";
 import { ProposalReview } from "@/components/proposal-builder/proposal-review";
 import { ParsingLoader } from "@/components/proposal-builder/parsing-loader";
 import { parseExcelAction } from "@/app/actions/parse-excel";
+import { parsePdfAction } from "@/app/actions/parse-pdf";
 import { ParsedData } from "@/types";
 import { toast } from "sonner";
 import { FileText, Sparkles } from "lucide-react";
@@ -22,9 +23,16 @@ export default function Home() {
     formData.append("file", file);
 
     try {
-      const result = await parseExcelAction(formData);
+      let result;
+      
+      if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+        result = await parsePdfAction(formData);
+      } else {
+        result = await parseExcelAction(formData);
+      }
+      
       setParsedData(result);
-      toast.success("Excel başarıyla analiz edildi!");
+      toast.success("Dosya başarıyla analiz edildi!");
     } catch (error) {
       console.error(error);
       const msg = (error as Error)?.message || "Dosya analiz edilirken bir hata oluştu.";
@@ -54,7 +62,7 @@ export default function Home() {
                 Yeni Teklif Oluştur
               </h2>
               <p className="text-gray-500 max-w-2xl mx-auto">
-                Excel formatındaki keşif listesini yükleyin, AI destekli motorumuz saniyeler içinde
+                Excel veya PDF formatındaki keşif listesini yükleyin, AI destekli motorumuz saniyeler içinde
                 profesyonel bir teklife dönüştürsün.
               </p>
             </div>
