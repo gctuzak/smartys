@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
+import fs from "fs/promises";
 
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_ANON_KEY!;
@@ -171,7 +172,37 @@ export async function getProposalDetailsAction(id: string) {
 
 export async function deleteProposalAction(id: string) {
     try {
-        // First delete items
+        // First delete associated documents
+        const { data: documents, error: docsFetchError } = await supabase
+            .from("documents")
+            .select("storage_path")
+            .eq("proposal_id", id);
+        
+        if (docsFetchError) throw docsFetchError;
+
+        if (documents && documents.length > 0) {
+            // Delete files from filesystem
+            await Promise.all(documents.map(async (doc) => {
+                try {
+                    if (doc.storage_path) {
+                        await fs.unlink(doc.storage_path);
+                    }
+                } catch (err) {
+                    console.error(`Failed to delete file at ${doc.storage_path}:`, err);
+                    // Continue even if file deletion fails
+                }
+            }));
+
+            // Delete document records
+            const { error: docsDeleteError } = await supabase
+                .from("documents")
+                .delete()
+                .eq("proposal_id", id);
+            
+            if (docsDeleteError) throw docsDeleteError;
+        }
+
+        // Then delete items
         const { error: itemsError } = await supabase
             .from("proposal_items")
             .delete()

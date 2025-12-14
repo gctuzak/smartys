@@ -31,6 +31,7 @@ export interface ProposalItem {
   unitPrice: number;
   totalPrice: number;
   attributes?: Record<string, unknown>;
+  isHeader?: boolean;
 }
 
 export interface Proposal {
@@ -74,6 +75,7 @@ export interface ParsedData {
       unitPrice: number;
       totalPrice: number;
       attributes?: Record<string, unknown>;
+      isHeader?: boolean;
     }[];
   };
 }

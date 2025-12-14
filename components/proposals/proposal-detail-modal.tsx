@@ -292,8 +292,8 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
                         {item.attributes && (
                             <div className="text-xs text-gray-500">
                                 {Object.entries(item.attributes)
-                                  .filter(([key]) => !['en', 'boy', 'adet', 'encm', 'boycm'].includes(key.toLowerCase()))
-                                  .map(([key, value]) => (
+                                .filter(([key]) => !['en', 'boy', 'adet', 'encm', 'boycm'].includes(key.toLowerCase()))
+                                .map(([key, value]) => (
                                     <span key={key} className="mr-2">{key}: {value as any}</span>
                                 ))}
                             </div>

@@ -1,0 +1,1 @@
+ALTER TABLE "proposal_items" ADD COLUMN "is_header" boolean DEFAULT false;

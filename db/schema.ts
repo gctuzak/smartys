@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, jsonb, timestamp, decimal, integer, serial } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, jsonb, timestamp, decimal, integer, serial, boolean } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
@@ -61,6 +61,7 @@ export const proposalItems = pgTable("proposal_items", {
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
   attributes: jsonb("attributes"),
+  isHeader: boolean("is_header").default(false),
 });
 
 export const documents = pgTable("documents", {
