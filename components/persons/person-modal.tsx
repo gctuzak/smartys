@@ -5,7 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { savePersonAction } from "@/app/actions/save-person";
-import { getCompaniesAction, getRepresentativesAction } from "@/app/actions/fetch-data";
+import { getCompaniesAction, getRepresentativesAction, getCompanyAction } from "@/app/actions/fetch-data";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -52,9 +52,26 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
         getRepresentativesAction()
       ]);
 
+      let loadedCompanies: any[] = [];
       if (companiesResult.success) {
-        setCompanies(companiesResult.data || []);
+        loadedCompanies = companiesResult.data || [];
       }
+
+      // If we are editing a person and their company is not in the list, fetch it
+      if (person?.company_id) {
+        const companyExists = loadedCompanies.find((c: any) => c.id === person.company_id);
+        if (!companyExists) {
+          const companyResult = await getCompanyAction(person.company_id);
+          if (companyResult.success && companyResult.data) {
+            loadedCompanies = [...loadedCompanies, companyResult.data];
+            // Sort companies by name
+            loadedCompanies.sort((a: any, b: any) => a.name.localeCompare(b.name));
+          }
+        }
+      }
+
+      setCompanies(loadedCompanies);
+
       if (usersResult.success) {
         setUsers(usersResult.data || []);
       }
@@ -62,7 +79,7 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
     if (isOpen) {
       fetchData();
     }
-  }, [isOpen]);
+  }, [isOpen, person]);
 
   useEffect(() => {
     if (person) {

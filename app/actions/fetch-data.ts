@@ -93,6 +93,23 @@ export async function getCompaniesAction(page = 1, pageSize = 20, search = "") {
   }
 }
 
+export async function getCompanyAction(id: string) {
+  try {
+    const { data, error } = await supabase
+      .from("companies")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) throw error;
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Get Company Error:", error);
+    return { success: false, error: "Şirket getirilemedi." };
+  }
+}
+
 export async function getPersonsAction(companyId?: string, page = 1, pageSize = 20, search = "") {
   try {
     const from = (page - 1) * pageSize;
