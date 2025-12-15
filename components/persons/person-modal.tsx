@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { savePersonAction } from "@/app/actions/save-person";
 import { getCompaniesAction, getRepresentativesAction, getCompanyAction } from "@/app/actions/fetch-data";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, User, Phone, Mail, MapPin, FileText, Building2 } from "lucide-react";
 
 interface PersonModalProps {
   isOpen: boolean;
@@ -175,259 +175,317 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
       isOpen={isOpen}
       onClose={onClose}
       title={person ? "Kişiyi Düzenle" : "Yeni Kişi Ekle"}
+      maxWidth="3xl"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="text-sm font-medium mb-1 block">Şirket *</label>
-          <select
-            name="company_id"
-            value={formData.company_id}
-            onChange={handleChange}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            required
-          >
-            <option value="">Şirket Seçin</option>
-            {companies.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        
+        {/* Top Row: Company & Representative */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50/50 p-4 rounded-lg border">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-gray-500" />
+                Şirket *
+              </label>
+              <select
+                name="company_id"
+                value={formData.company_id}
+                onChange={handleChange}
+                className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                required
+              >
+                <option value="">Şirket Seçin</option>
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+             <div>
+              <label className="text-sm font-medium mb-1.5 block flex items-center gap-1.5">
+                <User className="w-4 h-4 text-gray-500" />
+                Müşteri Temsilcisi
+              </label>
+              <select
+                name="representative_id"
+                value={formData.representative_id}
+                onChange={handleChange}
+                className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="">Seçiniz...</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.first_name} {user.last_name}
+                  </option>
+                ))}
+              </select>
+            </div>
         </div>
 
-        <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-3">
-             <label className="text-sm font-medium mb-1 block">Hitap</label>
-             <select
-              name="salutation"
-              value={formData.salutation}
-              onChange={handleChange}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="Bay">Bay</option>
-              <option value="Bayan">Bayan</option>
-            </select>
+        {/* Section 1: Kimlik Bilgileri */}
+        <div className="space-y-4">
+           <div className="flex items-center gap-2 text-primary border-b pb-2">
+            <User className="w-5 h-5" />
+            <h3 className="font-semibold text-lg">Kimlik Bilgileri</h3>
           </div>
-          <div className="col-span-5">
-            <label className="text-sm font-medium mb-1 block">Ad *</label>
-            <Input
-              name="first_name"
-              value={formData.first_name}
-              onChange={handleChange}
-              placeholder="Ad"
-              required
-            />
-          </div>
-          <div className="col-span-4">
-            <label className="text-sm font-medium mb-1 block">Soyad *</label>
-            <Input
-              name="last_name"
-              value={formData.last_name}
-              onChange={handleChange}
-              placeholder="Soyad"
-              required
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium mb-1 block">Ünvan</label>
-            <Input
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="Örn: Satış Müdürü"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">TC Kimlik No</label>
-            <Input
-              name="tckn"
-              value={formData.tckn}
-              onChange={handleChange}
-              placeholder="TCKN"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="text-sm font-medium mb-1 block">Adres</label>
-          <Input
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            placeholder="Açık adres"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium mb-1 block">İl</label>
-            <Input
-              name="city"
-              value={formData.city}
-              onChange={handleChange}
-              placeholder="İl"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">İlçe/Bölge</label>
-            <Input
-              name="district"
-              value={formData.district}
-              onChange={handleChange}
-              placeholder="İlçe"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium mb-1 block">Ülke</label>
-            <Input
-              name="country"
-              value={formData.country}
-              onChange={handleChange}
-              placeholder="Ülke"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Posta Kodu</label>
-            <Input
-              name="post_code"
-              value={formData.post_code}
-              onChange={handleChange}
-              placeholder="Posta Kodu"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium mb-1 block">E-posta 1</label>
-            <Input
-              name="email1"
-              value={formData.email1}
-              onChange={handleChange}
-              placeholder="E-posta adresi 1"
-              type="email"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">E-posta 2</label>
-            <Input
-              name="email2"
-              value={formData.email2}
-              onChange={handleChange}
-              placeholder="E-posta adresi 2"
-              type="email"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <label className="text-sm font-medium block">Telefonlar</label>
           
-          <div className="flex gap-2">
-            <select
-              name="phone1Type"
-              value={formData.phone1Type}
-              onChange={handleChange}
-              className="w-28 h-10 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="cep">Cep</option>
-              <option value="cep1">Cep 1</option>
-              <option value="santral">Santral</option>
-              <option value="is">İş</option>
-            </select>
-            <Input
-              name="phone1"
-              value={formData.phone1}
-              onChange={handleChange}
-              placeholder="Telefon 1"
-              className="flex-1"
-            />
-          </div>
-
-          <div className="flex gap-2">
-            <select
-              name="phone2Type"
-              value={formData.phone2Type}
-              onChange={handleChange}
-              className="w-28 h-10 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="cep">Cep</option>
-              <option value="cep1">Cep 1</option>
-              <option value="santral">Santral</option>
-              <option value="is">İş</option>
-            </select>
-            <Input
-              name="phone2"
-              value={formData.phone2}
-              onChange={handleChange}
-              placeholder="Telefon 2"
-              className="flex-1"
-            />
-          </div>
-
-          <div className="flex gap-2">
-             <select
-              name="phone3Type"
-              value={formData.phone3Type}
-              onChange={handleChange}
-              className="w-28 h-10 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="cep">Cep</option>
-              <option value="cep1">Cep 1</option>
-              <option value="santral">Santral</option>
-              <option value="is">İş</option>
-            </select>
-            <Input
-              name="phone3"
-              value={formData.phone3}
-              onChange={handleChange}
-              placeholder="Telefon 3"
-              className="flex-1"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+             <div className="md:col-span-2">
+                 <label className="text-sm font-medium mb-1.5 block text-gray-700">Hitap</label>
+                 <select
+                  name="salutation"
+                  value={formData.salutation}
+                  onChange={handleChange}
+                  className="flex h-10 w-full rounded-md border border-input bg-gray-50/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="Bay">Bay</option>
+                  <option value="Bayan">Bayan</option>
+                </select>
+             </div>
+              <div className="md:col-span-5">
+                <label className="text-sm font-medium mb-1.5 block text-gray-700">Ad *</label>
+                <Input
+                  name="first_name"
+                  value={formData.first_name}
+                  onChange={handleChange}
+                  placeholder="Ad"
+                  required
+                  className="bg-gray-50/50"
+                />
+              </div>
+              <div className="md:col-span-5">
+                <label className="text-sm font-medium mb-1.5 block text-gray-700">Soyad *</label>
+                <Input
+                  name="last_name"
+                  value={formData.last_name}
+                  onChange={handleChange}
+                  placeholder="Soyad"
+                  required
+                  className="bg-gray-50/50"
+                />
+              </div>
+              <div className="md:col-span-6">
+                <label className="text-sm font-medium mb-1.5 block text-gray-700">Ünvan</label>
+                <Input
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  placeholder="Örn: Satış Müdürü"
+                  className="bg-gray-50/50"
+                />
+              </div>
+              <div className="md:col-span-6">
+                <label className="text-sm font-medium mb-1.5 block text-gray-700">TC Kimlik No</label>
+                <Input
+                  name="tckn"
+                  value={formData.tckn}
+                  onChange={handleChange}
+                  placeholder="TCKN"
+                  className="bg-gray-50/50"
+                />
+              </div>
           </div>
         </div>
 
-        <div>
-          <label className="text-sm font-medium mb-1 block">Müşteri Temsilcisi</label>
-          <select
-            name="representative_id"
-            value={formData.representative_id}
-            onChange={handleChange}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <option value="">Seçiniz...</option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.first_name} {user.last_name}
-              </option>
-            ))}
-          </select>
+        {/* Section 2: İletişim */}
+        <div className="space-y-4">
+           <div className="flex items-center gap-2 text-primary border-b pb-2">
+            <Phone className="w-5 h-5" />
+            <h3 className="font-semibold text-lg">İletişim Bilgileri</h3>
+          </div>
+          
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Phone 1 */}
+            <div className="space-y-1">
+               <label className="text-xs text-gray-500 font-medium ml-1">Telefon 1</label>
+               <div className="flex gap-2">
+                <select
+                  name="phone1Type"
+                  value={formData.phone1Type}
+                  onChange={handleChange}
+                  className="w-24 h-10 rounded-md border border-input bg-gray-50/50 px-2 text-sm"
+                >
+                  <option value="cep">Cep</option>
+                  <option value="is">İş</option>
+                  <option value="santral">Santral</option>
+                </select>
+                <Input
+                  name="phone1"
+                  value={formData.phone1}
+                  onChange={handleChange}
+                  placeholder="Telefon 1"
+                  className="flex-1 bg-gray-50/50"
+                />
+              </div>
+            </div>
+
+            {/* Phone 2 */}
+            <div className="space-y-1">
+               <label className="text-xs text-gray-500 font-medium ml-1">Telefon 2</label>
+               <div className="flex gap-2">
+                <select
+                  name="phone2Type"
+                  value={formData.phone2Type}
+                  onChange={handleChange}
+                  className="w-24 h-10 rounded-md border border-input bg-gray-50/50 px-2 text-sm"
+                >
+                  <option value="cep">Cep</option>
+                  <option value="is">İş</option>
+                  <option value="santral">Santral</option>
+                </select>
+                <Input
+                  name="phone2"
+                  value={formData.phone2}
+                  onChange={handleChange}
+                  placeholder="Telefon 2"
+                  className="flex-1 bg-gray-50/50"
+                />
+              </div>
+            </div>
+
+             {/* Phone 3 */}
+             <div className="space-y-1">
+               <label className="text-xs text-gray-500 font-medium ml-1">Telefon 3</label>
+               <div className="flex gap-2">
+                <select
+                  name="phone3Type"
+                  value={formData.phone3Type}
+                  onChange={handleChange}
+                  className="w-24 h-10 rounded-md border border-input bg-gray-50/50 px-2 text-sm"
+                >
+                  <option value="cep">Cep</option>
+                  <option value="is">İş</option>
+                  <option value="santral">Santral</option>
+                </select>
+                <Input
+                  name="phone3"
+                  value={formData.phone3}
+                  onChange={handleChange}
+                  placeholder="Telefon 3"
+                  className="flex-1 bg-gray-50/50"
+                />
+              </div>
+            </div>
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-1">
+               <div className="flex items-center gap-2 mb-1.5">
+                  <Mail className="w-3 h-3 text-gray-400" />
+                  <label className="text-sm font-medium text-gray-700">E-posta 1</label>
+               </div>
+              <Input
+                name="email1"
+                value={formData.email1}
+                onChange={handleChange}
+                placeholder="ornek@sirket.com"
+                type="email"
+                className="bg-gray-50/50"
+              />
+            </div>
+            <div className="md:col-span-1">
+               <div className="flex items-center gap-2 mb-1.5">
+                  <Mail className="w-3 h-3 text-gray-400" />
+                  <label className="text-sm font-medium text-gray-700">E-posta 2</label>
+               </div>
+              <Input
+                name="email2"
+                value={formData.email2}
+                onChange={handleChange}
+                placeholder="diger@sirket.com"
+                type="email"
+                className="bg-gray-50/50"
+              />
+            </div>
+           </div>
         </div>
 
-        <div>
-          <label className="text-sm font-medium mb-1 block">Notlar</label>
-          <textarea
-            name="notes"
-            value={formData.notes}
-            onChange={handleChange} // This needs to be typed as TextArea event
-            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[100px]"
-            placeholder="Kişi hakkında notlar..."
-          />
+        {/* Section 3: Adres & Notlar */}
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+           <div className="space-y-4">
+             <div className="flex items-center gap-2 text-primary border-b pb-2">
+                <MapPin className="w-5 h-5" />
+                <h3 className="font-semibold text-lg">Adres Bilgileri</h3>
+             </div>
+             <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="text-sm font-medium mb-1 block text-gray-700">Açık Adres</label>
+                  <Input
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    placeholder="Mahalle, Cadde, Sokak, No..."
+                    className="bg-gray-50/50"
+                  />
+                </div>
+                 <div>
+                    <label className="text-sm font-medium mb-1 block text-gray-700">İl</label>
+                    <Input
+                      name="city"
+                      value={formData.city}
+                      onChange={handleChange}
+                      placeholder="İl"
+                      className="bg-gray-50/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block text-gray-700">İlçe</label>
+                    <Input
+                      name="district"
+                      value={formData.district}
+                      onChange={handleChange}
+                      placeholder="İlçe"
+                      className="bg-gray-50/50"
+                    />
+                  </div>
+                   <div>
+                    <label className="text-sm font-medium mb-1 block text-gray-700">Ülke</label>
+                    <Input
+                      name="country"
+                      value={formData.country}
+                      onChange={handleChange}
+                      placeholder="Ülke"
+                      className="bg-gray-50/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block text-gray-700">Posta Kodu</label>
+                    <Input
+                      name="post_code"
+                      value={formData.post_code}
+                      onChange={handleChange}
+                      placeholder="PK"
+                      className="bg-gray-50/50"
+                    />
+                  </div>
+             </div>
+           </div>
+
+           <div className="space-y-4">
+             <div className="flex items-center gap-2 text-primary border-b pb-2">
+                <FileText className="w-5 h-5" />
+                <h3 className="font-semibold text-lg">Notlar</h3>
+             </div>
+             <div className="h-full">
+                <label className="text-sm font-medium mb-1 block text-gray-700">Kişi Hakkında Notlar</label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleChange}
+                  placeholder="Özel notlar, hatırlatmalar..."
+                  className="flex min-h-[160px] w-full rounded-md border border-input bg-gray-50/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                />
+             </div>
+           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+        <div className="flex justify-end gap-3 pt-6 border-t mt-8">
+          <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="px-6">
             İptal
           </Button>
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} className="px-6">
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {person ? "Güncelle" : "Oluştur"}
+            {person ? "Değişiklikleri Kaydet" : "Kişi Oluştur"}
           </Button>
         </div>
       </form>
