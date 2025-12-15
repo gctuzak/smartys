@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { savePersonAction } from "@/app/actions/save-person";
 import { getCompaniesAction, getRepresentativesAction, getCompanyAction } from "@/app/actions/fetch-data";
 import { toast } from "sonner";
-import { Loader2, User, Phone, Mail, MapPin, FileText, Building2 } from "lucide-react";
+import { Loader2, User, Phone, Mail, MapPin, FileText, Building2, History } from "lucide-react";
+import { PastJobsModal } from "@/components/shared/past-jobs-modal";
 
 interface PersonModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ interface PersonModalProps {
 
 export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalProps) {
   const [loading, setLoading] = useState(false);
+  const [showPastJobs, setShowPastJobs] = useState(false);
   const [companies, setCompanies] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [formData, setFormData] = useState({
@@ -178,6 +180,19 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
       maxWidth="3xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
+        {person && (
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowPastJobs(true)}
+              className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+            >
+              <History className="w-4 h-4" />
+              Geçmiş İşler
+            </Button>
+          </div>
+        )}
         
         {/* Top Row: Company & Representative */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50/50 p-4 rounded-lg border">
@@ -489,6 +504,16 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
           </Button>
         </div>
       </form>
+
+      {person && (
+        <PastJobsModal
+          isOpen={showPastJobs}
+          onClose={() => setShowPastJobs(false)}
+          entityType="person"
+          entityId={person.id}
+          entityName={`${person.first_name} ${person.last_name}`}
+        />
+      )}
     </Modal>
   );
 }

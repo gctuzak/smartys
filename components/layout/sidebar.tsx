@@ -11,12 +11,14 @@ import {
   Package, 
   PlusCircle,
   Settings,
-  UserCheck
+  UserCheck,
+  ShoppingCart
 } from "lucide-react";
 
 const navigation = [
   { name: "Teklif Oluştur", href: "/", icon: PlusCircle },
   { name: "Teklifler", href: "/proposals", icon: FileText },
+  { name: "Siparişler", href: "/orders", icon: ShoppingCart },
   { name: "Şirketler", href: "/companies", icon: Building2 },
   { name: "Kişiler", href: "/persons", icon: Users },
   { name: "Temsilciler", href: "/users", icon: UserCheck },

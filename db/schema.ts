@@ -115,12 +115,14 @@ export const documents = pgTable("documents", {
 export const usersRelations = relations(users, ({ many }) => ({
   companies: many(companies),
   persons: many(persons),
+  orders: many(orders),
 }));
 
 export const companiesRelations = relations(companies, ({ many, one }) => ({
   proposals: many(proposals),
   persons: many(persons),
   documents: many(documents),
+  orders: many(orders),
   representative: one(users, {
     fields: [companies.representativeId],
     references: [users.id],
@@ -138,6 +140,7 @@ export const personsRelations = relations(persons, ({ one, many }) => ({
   }),
   proposals: many(proposals),
   documents: many(documents),
+  orders: many(orders),
 }));
 
 export const proposalsRelations = relations(proposals, ({ one, many }) => ({
@@ -151,6 +154,10 @@ export const proposalsRelations = relations(proposals, ({ one, many }) => ({
   }),
   items: many(proposalItems),
   documents: many(documents),
+  order: one(orders, {
+    fields: [proposals.id],
+    references: [orders.proposalId],
+  }),
 }));
 
 export const proposalItemsRelations = relations(proposalItems, ({ one }) => ({
@@ -172,3 +179,38 @@ export const products = pgTable("products", {
   vatRate: integer("vat_rate").default(20),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const orders = pgTable("orders", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orderNo: text("order_no").unique().notNull(),
+  proposalId: uuid("proposal_id").references(() => proposals.id),
+  companyId: uuid("company_id").references(() => companies.id),
+  personId: uuid("person_id").references(() => persons.id),
+  representativeId: uuid("representative_id").references(() => users.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }),
+  currency: text("currency"),
+  notes: text("notes"),
+  projectName: text("project_name"),
+  status: text("status").default("pending"),
+  orderDate: timestamp("order_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const ordersRelations = relations(orders, ({ one }) => ({
+  proposal: one(proposals, {
+    fields: [orders.proposalId],
+    references: [proposals.id],
+  }),
+  company: one(companies, {
+    fields: [orders.companyId],
+    references: [companies.id],
+  }),
+  person: one(persons, {
+    fields: [orders.personId],
+    references: [persons.id],
+  }),
+  representative: one(users, {
+    fields: [orders.representativeId],
+    references: [users.id],
+  }),
+}));

@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { saveCompanyAction } from "@/app/actions/save-company";
 import { getRepresentativesAction, getPersonsAction } from "@/app/actions/fetch-data";
 import { toast } from "sonner";
-import { Loader2, Building2, Phone, Mail, MapPin, FileText, Users } from "lucide-react";
+import { Loader2, Building2, Phone, Mail, MapPin, FileText, Users, History } from "lucide-react";
+import { PastJobsModal } from "@/components/shared/past-jobs-modal";
 
 interface CompanyModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ interface CompanyModalProps {
 
 export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyModalProps) {
   const [loading, setLoading] = useState(false);
+  const [showPastJobs, setShowPastJobs] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [persons, setPersons] = useState<any[]>([]);
   const [formData, setFormData] = useState({
@@ -159,6 +161,19 @@ export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyMod
       maxWidth="4xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
+        {company && (
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowPastJobs(true)}
+              className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+            >
+              <History className="w-4 h-4" />
+              Geçmiş İşler
+            </Button>
+          </div>
+        )}
         
         {/* Section 1: Genel Bilgiler */}
         <div className="space-y-4">
@@ -484,6 +499,16 @@ export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyMod
           </Button>
         </div>
       </form>
+
+      {company && (
+        <PastJobsModal
+          isOpen={showPastJobs}
+          onClose={() => setShowPastJobs(false)}
+          entityType="company"
+          entityId={company.id}
+          entityName={company.name}
+        />
+      )}
     </Modal>
   );
 }

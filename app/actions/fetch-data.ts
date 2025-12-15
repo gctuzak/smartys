@@ -422,3 +422,108 @@ export async function deletePersonAction(id: string) {
         return { success: false, error: "Kişi silinemedi." };
     }
 }
+
+export async function getOrdersAction(page = 1, pageSize = 20, search = "") {
+  try {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let query = supabase
+      .from("orders")
+      .select(`
+        *,
+        company:companies (name),
+        person:persons (first_name, last_name),
+        representative:users (first_name, last_name)
+      `, { count: "exact" });
+
+    if (search) {
+      const sLower = search.toLocaleLowerCase('tr-TR');
+      const sUpper = search.toLocaleUpperCase('tr-TR');
+      query = query.or(`order_no.ilike.%${search}%,status.ilike.%${sLower}%,status.ilike.%${sUpper}%`);
+    }
+
+    const { data, count, error } = await query
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    return {
+      success: true,
+      data: data as any[],
+      count: count || 0,
+      totalPages: Math.ceil((count || 0) / pageSize),
+    };
+  } catch (error) {
+    console.error("Get Orders Error:", error);
+    return { success: false, error: "Siparişler getirilemedi." };
+  }
+}
+
+export async function deleteOrderAction(id: string) {
+    try {
+        const { error } = await supabase
+            .from("orders")
+            .delete()
+            .eq("id", id);
+        
+        if (error) throw error;
+
+        return { success: true };
+    } catch (error) {
+        console.error("Delete Order Error:", error);
+        return { success: false, error: "Sipariş silinemedi." };
+    }
+}
+
+export async function getOrderDetailsAction(id: string) {
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select(`
+        *,
+        company:companies (
+          id,
+          name,
+          contact_info,
+          tax_no,
+          tax_office,
+          address,
+          phone1,
+          email1,
+          website
+        ),
+        person:persons (
+          id,
+          first_name,
+          last_name,
+          email1,
+          phone1,
+          title
+        ),
+        representative:users (
+          id,
+          first_name,
+          last_name,
+          email,
+          phone
+        ),
+        proposal:proposals (
+            id,
+            proposal_no,
+            grand_total,
+            currency
+        )
+      `)
+      .eq("id", id)
+      .single();
+
+    if (error) throw error;
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Get Order Details Error:", error);
+    return { success: false, error: "Sipariş detayları getirilemedi." };
+  }
+}
