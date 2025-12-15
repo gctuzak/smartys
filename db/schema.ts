@@ -13,13 +13,27 @@ export const users = pgTable("users", {
 
 export const companies = pgTable("companies", {
   id: uuid("id").defaultRandom().primaryKey(),
+  code: text("code").unique(), // O ile başlayan ID
   name: text("name").notNull(),
+  type: text("type"), // New: Kişi/Kurum Türü
   taxNo: text("tax_no"),
   taxOffice: text("tax_office"),
   address: text("address"),
-  phone: text("phone"),
-  email: text("email"),
+  city: text("city"), // New: İl
+  district: text("district"), // New: İlçe/Bölge
+  country: text("country").default("Türkiye"), // New: Ülke
+  postCode: text("post_code"), // New: Posta Kodu
+  phone1: text("phone1"),
+  phone1Type: text("phone1_type").default("cep"),
+  phone2: text("phone2"),
+  phone2Type: text("phone2_type"),
+  phone3: text("phone3"),
+  phone3Type: text("phone3_type"),
+  email1: text("email1"),
+  email2: text("email2"),
   website: text("website"),
+  notes: text("notes"), // New: Notlar
+  authorizedPerson: text("authorized_person"), // New: Yetkili
   representativeId: uuid("representative_id").references(() => users.id),
   contactInfo: jsonb("contact_info"), // Keeping for legacy/extra data
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -27,12 +41,27 @@ export const companies = pgTable("companies", {
 
 export const persons = pgTable("persons", {
   id: uuid("id").defaultRandom().primaryKey(),
+  code: text("code").unique(), // K ile başlayan ID
   companyId: uuid("company_id").references(() => companies.id),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
-  email: text("email"),
-  phone: text("phone"),
+  salutation: text("salutation"), // New: Hitap
+  tckn: text("tckn"), // New: TC Kimlik No
+  email1: text("email1"),
+  email2: text("email2"),
+  phone1: text("phone1"),
+  phone1Type: text("phone1_type").default("cep"),
+  phone2: text("phone2"),
+  phone2Type: text("phone2_type"),
+  phone3: text("phone3"),
+  phone3Type: text("phone3_type"),
   title: text("title"),
+  address: text("address"), // New: Adres (if different from company)
+  city: text("city"), // New
+  district: text("district"), // New
+  country: text("country").default("Türkiye"), // New
+  postCode: text("post_code"), // New
+  notes: text("notes"), // New: Notlar
   representativeId: uuid("representative_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

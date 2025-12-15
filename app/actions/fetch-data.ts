@@ -22,15 +22,15 @@ export async function getProposalsAction(page = 1, pageSize = 20, search = "") {
           tax_no,
           tax_office,
           address,
-          phone,
-          email,
+          phone1,
+          email1,
           website
         ),
         person:persons (
           first_name,
           last_name,
-          email,
-          phone,
+          email1,
+          phone1,
           title
         )
       `, { count: "exact" });
@@ -45,7 +45,7 @@ export async function getProposalsAction(page = 1, pageSize = 20, search = "") {
     }
 
     const { data, count, error } = await query
-      .order("created_at", { ascending: false })
+      .order("first_name", { ascending: true })
       .range(from, to);
 
     if (error) throw error;
@@ -69,14 +69,14 @@ export async function getCompaniesAction(page = 1, pageSize = 20, search = "") {
 
     let query = supabase
       .from("companies")
-      .select("*", { count: "exact" });
+      .select("*, representative:users(first_name, last_name)", { count: "exact" });
 
     if (search) {
       query = query.ilike("name", `%${search}%`);
     }
 
     const { data, count, error } = await query
-      .order("created_at", { ascending: false })
+      .order("name", { ascending: true })
       .range(from, to);
 
     if (error) throw error;
@@ -102,7 +102,8 @@ export async function getPersonsAction(companyId?: string, page = 1, pageSize = 
       .from("persons")
       .select(`
         *,
-        company:companies (name)
+        company:companies (name),
+        representative:users (first_name, last_name)
       `, { count: "exact" });
 
     if (companyId) {
@@ -114,7 +115,7 @@ export async function getPersonsAction(companyId?: string, page = 1, pageSize = 
     }
 
     const { data, count, error } = await query
-      .order("created_at", { ascending: false })
+      .order("first_name", { ascending: true })
       .range(from, to);
 
     if (error) throw error;
@@ -144,16 +145,16 @@ export async function getProposalDetailsAction(id: string) {
           tax_no,
           tax_office,
           address,
-          phone,
-          email,
+          phone1,
+          email1,
           website
         ),
         person:persons (
           id,
           first_name,
           last_name,
-          email,
-          phone,
+          email1,
+          phone1,
           title
         ),
         items:proposal_items (*)
@@ -167,6 +168,23 @@ export async function getProposalDetailsAction(id: string) {
   } catch (error) {
     console.error("Get Proposal Details Error:", error);
     return { success: false, error: "Teklif detayları getirilemedi." };
+  }
+}
+
+export async function getRepresentativesAction() {
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, first_name, last_name")
+      .eq("role", "representative")
+      .order("first_name", { ascending: true });
+
+    if (error) throw error;
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Get Representatives Error:", error);
+    return { success: false, error: "Temsilciler getirilemedi." };
   }
 }
 

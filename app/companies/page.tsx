@@ -93,18 +93,20 @@ export default function CompaniesPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Kod</TableHead>
                 <TableHead>Şirket Adı</TableHead>
-                <TableHead>Vergi No</TableHead>
+                <TableHead>Tür</TableHead>
+                <TableHead>İl/İlçe</TableHead>
+                <TableHead>Temsilci</TableHead>
                 <TableHead>Telefon</TableHead>
                 <TableHead>E-posta</TableHead>
-                <TableHead>Kayıt Tarihi</TableHead>
                 <TableHead className="text-right">İşlemler</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {companies.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                     Şirket bulunamadı.
                   </TableCell>
                 </TableRow>
@@ -115,16 +117,22 @@ export default function CompaniesPage() {
                     className="cursor-pointer hover:bg-gray-50"
                     onClick={() => handleEdit(company)}
                   >
+                    <TableCell className="font-mono text-sm">{company.code || "-"}</TableCell>
                     <TableCell className="font-medium flex items-center gap-2">
                       <Building2 className="w-4 h-4 text-gray-400" />
                       {company.name}
                     </TableCell>
-                    <TableCell>{company.tax_no || "-"}</TableCell>
-                    <TableCell>{company.phone || "-"}</TableCell>
-                    <TableCell>{company.email || "-"}</TableCell>
+                    <TableCell>{company.type || "-"}</TableCell>
                     <TableCell>
-                      {new Date(company.created_at).toLocaleDateString("tr-TR")}
+                      {company.city ? `${company.city}${company.district ? ` / ${company.district}` : ""}` : "-"}
                     </TableCell>
+                    <TableCell>
+                      {company.representative 
+                        ? `${company.representative.first_name} ${company.representative.last_name}` 
+                        : "-"}
+                    </TableCell>
+                    <TableCell>{company.phone1 || "-"}</TableCell>
+                    <TableCell>{company.email1 || "-"}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button

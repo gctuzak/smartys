@@ -5,7 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { savePersonAction } from "@/app/actions/save-person";
-import { getCompaniesAction, getUsersAction } from "@/app/actions/fetch-data";
+import { getCompaniesAction, getRepresentativesAction } from "@/app/actions/fetch-data";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -24,9 +24,23 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
     company_id: "",
     first_name: "",
     last_name: "",
-    email: "",
-    phone: "",
+    salutation: "Bay",
+    tckn: "",
+    email1: "",
+    email2: "",
+    phone1: "",
+    phone1Type: "cep",
+    phone2: "",
+    phone2Type: "cep",
+    phone3: "",
+    phone3Type: "santral",
     title: "",
+    address: "",
+    city: "",
+    district: "",
+    country: "Türkiye",
+    post_code: "",
+    notes: "",
     representative_id: "",
   });
 
@@ -35,7 +49,7 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
     const fetchData = async () => {
       const [companiesResult, usersResult] = await Promise.all([
         getCompaniesAction(1, 100),
-        getUsersAction(1, 100)
+        getRepresentativesAction()
       ]);
 
       if (companiesResult.success) {
@@ -56,9 +70,23 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
         company_id: person.company_id || "",
         first_name: person.first_name || "",
         last_name: person.last_name || "",
-        email: person.email || "",
-        phone: person.phone || "",
+        salutation: person.salutation || "Bay",
+        tckn: person.tckn || "",
+        email1: person.email1 || "",
+        email2: person.email2 || "",
+        phone1: person.phone1 || "",
+        phone1Type: person.phone1_type || "cep",
+        phone2: person.phone2 || "",
+        phone2Type: person.phone2_type || "cep",
+        phone3: person.phone3 || "",
+        phone3Type: person.phone3_type || "santral",
         title: person.title || "",
+        address: person.address || "",
+        city: person.city || "",
+        district: person.district || "",
+        country: person.country || "Türkiye",
+        post_code: person.post_code || "",
+        notes: person.notes || "",
         representative_id: person.representative_id || "",
       });
     } else {
@@ -66,15 +94,29 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
         company_id: "",
         first_name: "",
         last_name: "",
-        email: "",
-        phone: "",
+        salutation: "Bay",
+        tckn: "",
+        email1: "",
+        email2: "",
+        phone1: "",
+        phone1Type: "cep",
+        phone2: "",
+        phone2Type: "cep",
+        phone3: "",
+        phone3Type: "santral",
         title: "",
+        address: "",
+        city: "",
+        district: "",
+        country: "Türkiye",
+        post_code: "",
+        notes: "",
         representative_id: "",
       });
     }
   }, [person, isOpen]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -136,8 +178,20 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
           </select>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+        <div className="grid grid-cols-12 gap-4">
+          <div className="col-span-3">
+             <label className="text-sm font-medium mb-1 block">Hitap</label>
+             <select
+              name="salutation"
+              value={formData.salutation}
+              onChange={handleChange}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="Bay">Bay</option>
+              <option value="Bayan">Bayan</option>
+            </select>
+          </div>
+          <div className="col-span-5">
             <label className="text-sm font-medium mb-1 block">Ad *</label>
             <Input
               name="first_name"
@@ -147,7 +201,7 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
               required
             />
           </div>
-          <div>
+          <div className="col-span-4">
             <label className="text-sm font-medium mb-1 block">Soyad *</label>
             <Input
               name="last_name"
@@ -170,25 +224,156 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
             />
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">Telefon</label>
+            <label className="text-sm font-medium mb-1 block">TC Kimlik No</label>
             <Input
-              name="phone"
-              value={formData.phone}
+              name="tckn"
+              value={formData.tckn}
               onChange={handleChange}
-              placeholder="Telefon numarası"
+              placeholder="TCKN"
             />
           </div>
         </div>
 
         <div>
-          <label className="text-sm font-medium mb-1 block">E-posta</label>
+          <label className="text-sm font-medium mb-1 block">Adres</label>
           <Input
-            name="email"
-            value={formData.email}
+            name="address"
+            value={formData.address}
             onChange={handleChange}
-            placeholder="E-posta adresi"
-            type="email"
+            placeholder="Açık adres"
           />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium mb-1 block">İl</label>
+            <Input
+              name="city"
+              value={formData.city}
+              onChange={handleChange}
+              placeholder="İl"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">İlçe/Bölge</label>
+            <Input
+              name="district"
+              value={formData.district}
+              onChange={handleChange}
+              placeholder="İlçe"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium mb-1 block">Ülke</label>
+            <Input
+              name="country"
+              value={formData.country}
+              onChange={handleChange}
+              placeholder="Ülke"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">Posta Kodu</label>
+            <Input
+              name="post_code"
+              value={formData.post_code}
+              onChange={handleChange}
+              placeholder="Posta Kodu"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium mb-1 block">E-posta 1</label>
+            <Input
+              name="email1"
+              value={formData.email1}
+              onChange={handleChange}
+              placeholder="E-posta adresi 1"
+              type="email"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">E-posta 2</label>
+            <Input
+              name="email2"
+              value={formData.email2}
+              onChange={handleChange}
+              placeholder="E-posta adresi 2"
+              type="email"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <label className="text-sm font-medium block">Telefonlar</label>
+          
+          <div className="flex gap-2">
+            <select
+              name="phone1Type"
+              value={formData.phone1Type}
+              onChange={handleChange}
+              className="w-28 h-10 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="cep">Cep</option>
+              <option value="cep1">Cep 1</option>
+              <option value="santral">Santral</option>
+              <option value="is">İş</option>
+            </select>
+            <Input
+              name="phone1"
+              value={formData.phone1}
+              onChange={handleChange}
+              placeholder="Telefon 1"
+              className="flex-1"
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <select
+              name="phone2Type"
+              value={formData.phone2Type}
+              onChange={handleChange}
+              className="w-28 h-10 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="cep">Cep</option>
+              <option value="cep1">Cep 1</option>
+              <option value="santral">Santral</option>
+              <option value="is">İş</option>
+            </select>
+            <Input
+              name="phone2"
+              value={formData.phone2}
+              onChange={handleChange}
+              placeholder="Telefon 2"
+              className="flex-1"
+            />
+          </div>
+
+          <div className="flex gap-2">
+             <select
+              name="phone3Type"
+              value={formData.phone3Type}
+              onChange={handleChange}
+              className="w-28 h-10 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="cep">Cep</option>
+              <option value="cep1">Cep 1</option>
+              <option value="santral">Santral</option>
+              <option value="is">İş</option>
+            </select>
+            <Input
+              name="phone3"
+              value={formData.phone3}
+              onChange={handleChange}
+              placeholder="Telefon 3"
+              className="flex-1"
+            />
+          </div>
         </div>
 
         <div>
@@ -206,6 +391,17 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium mb-1 block">Notlar</label>
+          <textarea
+            name="notes"
+            value={formData.notes}
+            onChange={handleChange} // This needs to be typed as TextArea event
+            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[100px]"
+            placeholder="Kişi hakkında notlar..."
+          />
         </div>
 
         <div className="flex justify-end gap-2 pt-4">

@@ -94,18 +94,20 @@ export default function PersonsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Kod</TableHead>
                 <TableHead>Ad Soyad</TableHead>
                 <TableHead>Şirket</TableHead>
                 <TableHead>Ünvan</TableHead>
                 <TableHead>Telefon</TableHead>
                 <TableHead>E-posta</TableHead>
+                <TableHead>Temsilci</TableHead>
                 <TableHead className="text-right">İşlemler</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {persons.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                     Kişi bulunamadı.
                   </TableCell>
                 </TableRow>
@@ -116,6 +118,7 @@ export default function PersonsPage() {
                     className="cursor-pointer hover:bg-gray-50"
                     onClick={() => handleEdit(person)}
                   >
+                    <TableCell className="font-mono text-sm">{person.code || "-"}</TableCell>
                     <TableCell className="font-medium flex items-center gap-2">
                       <User className="w-4 h-4 text-gray-400" />
                       {person.first_name} {person.last_name}
@@ -127,8 +130,13 @@ export default function PersonsPage() {
                       </div>
                     </TableCell>
                     <TableCell>{person.title || "-"}</TableCell>
-                    <TableCell>{person.phone || "-"}</TableCell>
-                    <TableCell>{person.email || "-"}</TableCell>
+                    <TableCell>{person.phone1 || "-"}</TableCell>
+                    <TableCell>{person.email1 || "-"}</TableCell>
+                    <TableCell>
+                      {person.representative 
+                        ? `${person.representative.first_name} ${person.representative.last_name}` 
+                        : "-"}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button

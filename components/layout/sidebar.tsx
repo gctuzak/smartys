@@ -30,7 +30,7 @@ export function Sidebar() {
     <div className="flex h-full w-64 flex-col bg-gray-900 text-white fixed left-0 top-0 bottom-0 overflow-y-auto z-50">
       <div className="flex h-16 shrink-0 items-center px-6 border-b border-gray-800">
         <LayoutDashboard className="h-6 w-6 text-blue-500 mr-2" />
-        <span className="text-lg font-bold">SmartProposal</span>
+        <span className="text-lg font-bold">Smartys</span>
       </div>
       <nav className="flex-1 space-y-1 px-2 py-4">
         {navigation.map((item) => {
