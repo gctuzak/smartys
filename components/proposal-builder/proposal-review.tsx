@@ -322,7 +322,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
             <div className="text-lg font-bold text-green-600">
                 Toplam: {(() => {
                   try {
-                    return data.proposal.totalAmount.toLocaleString("tr-TR", { style: "currency", currency: data.proposal.currency || "TRY" });
+                    return data.proposal.totalAmount.toLocaleString("tr-TR", { style: "currency", currency: (data.proposal.currency || "TRY").replace('TL', 'TRY') });
                   } catch {
                     return `${data.proposal.totalAmount.toLocaleString("tr-TR")} ${data.proposal.currency}`;
                   }
@@ -331,7 +331,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
             <div className="text-lg font-bold text-gray-600">
                 KDV (%{data.proposal.vatRate ?? 20}): {(() => {
                   try {
-                    return (data.proposal.vatAmount ?? 0).toLocaleString("tr-TR", { style: "currency", currency: data.proposal.currency || "TRY" });
+                    return (data.proposal.vatAmount ?? 0).toLocaleString("tr-TR", { style: "currency", currency: (data.proposal.currency || "TRY").replace('TL', 'TRY') });
                   } catch {
                     return `${(data.proposal.vatAmount ?? 0).toLocaleString("tr-TR")} ${data.proposal.currency}`;
                   }
@@ -340,7 +340,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
             <div className="text-xl font-bold text-green-700">
                 Genel Toplam: {(() => {
                   try {
-                    return (data.proposal.grandTotal ?? 0).toLocaleString("tr-TR", { style: "currency", currency: data.proposal.currency || "TRY" });
+                    return (data.proposal.grandTotal ?? 0).toLocaleString("tr-TR", { style: "currency", currency: (data.proposal.currency || "TRY").replace('TL', 'TRY') });
                   } catch {
                     return `${(data.proposal.grandTotal ?? 0).toLocaleString("tr-TR")} ${data.proposal.currency}`;
                   }

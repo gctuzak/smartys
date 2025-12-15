@@ -21,13 +21,21 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
 
   const fetchProducts = useCallback(async () => {
-    setLoading(true);
-    const result = await getProductsAction(page, 20, search);
-    if (result.success) {
-      setProducts(result.data || []);
-      setTotalPages(result.totalPages || 1);
+    try {
+      setLoading(true);
+      const result = await getProductsAction(page, 20, search);
+      if (result.success) {
+        setProducts(result.data || []);
+        setTotalPages(result.totalPages || 1);
+      } else {
+        toast.error(result.error || "Veriler alınamadı");
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+      toast.error("Beklenmeyen bir hata oluştu");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [page, search]);
 
   useEffect(() => {

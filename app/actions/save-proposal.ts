@@ -183,6 +183,10 @@ export async function saveProposalAction(data: ParsedData) {
         vat_amount: data.proposal.vatAmount,
         grand_total: data.proposal.grandTotal,
         currency: data.proposal.currency,
+        legacy_proposal_no: data.proposal.legacyProposalNo,
+        notes: data.proposal.notes,
+        payment_terms: data.proposal.paymentTerms,
+        proposal_date: data.proposal.proposalDate,
         ai_confidence: 85, // Mock confidence
       })
       .select('id')

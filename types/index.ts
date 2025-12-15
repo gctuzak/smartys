@@ -42,8 +42,14 @@ export interface Proposal {
   currency?: string;
   aiConfidence?: number;
   createdAt?: Date;
+  legacyProposalNo?: string;
+  notes?: string;
+  paymentTerms?: string;
+  proposalDate?: Date;
   items?: ProposalItem[];
   company?: Company;
+  personId?: string;
+  person?: Person;
 }
 
 export interface ParsedData {
@@ -68,6 +74,10 @@ export interface ParsedData {
     vatRate?: number;
     vatAmount?: number;
     grandTotal?: number;
+    legacyProposalNo?: string;
+    notes?: string;
+    paymentTerms?: string;
+    proposalDate?: Date;
     items: {
       description: string;
       quantity: number;

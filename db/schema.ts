@@ -78,6 +78,10 @@ export const proposals = pgTable("proposals", {
   grandTotal: decimal("grand_total", { precision: 10, scale: 2 }),
   currency: text("currency"),
   aiConfidence: integer("ai_confidence"),
+  legacyProposalNo: text("legacy_proposal_no"), // For "Ad/Teklif Ref No"
+  notes: text("notes"), // For "Teklif Notları"
+  paymentTerms: text("payment_terms"), // For "Ödeme"
+  proposalDate: timestamp("proposal_date"), // For "Gönderim Tarihi"
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

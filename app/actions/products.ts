@@ -29,7 +29,9 @@ export async function getProductsAction(page = 1, pageSize = 20, search = "") {
       .select("*", { count: "exact" });
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%`);
+      const sLower = search.toLocaleLowerCase('tr-TR');
+      const sUpper = search.toLocaleUpperCase('tr-TR');
+      query = query.or(`name.ilike.%${search}%,name.ilike.%${sLower}%,name.ilike.%${sUpper}%,code.ilike.%${search}%,code.ilike.%${sLower}%,code.ilike.%${sUpper}%`);
     }
 
     const from = (page - 1) * pageSize;

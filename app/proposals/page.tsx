@@ -28,13 +28,21 @@ export default function ProposalsPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const fetchProposals = useCallback(async () => {
-    setLoading(true);
-    const result = await getProposalsAction(page, 20, search);
-    if (result.success) {
-      setProposals(result.data || []);
-      setTotalPages(result.totalPages || 1);
+    try {
+      setLoading(true);
+      const result = await getProposalsAction(page, 20, search);
+      if (result.success) {
+        setProposals(result.data || []);
+        setTotalPages(result.totalPages || 1);
+      } else {
+        toast.error(result.error || "Veriler alınamadı");
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+      toast.error("Beklenmeyen bir hata oluştu");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [page, search]);
 
   useEffect(() => {
@@ -99,7 +107,7 @@ export default function ProposalsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Teklif No</TableHead>
-                <TableHead>Şirket</TableHead>
+                <TableHead>Müşteri</TableHead>
                 <TableHead>Tarih</TableHead>
                 <TableHead>Tutar</TableHead>
                 <TableHead>Durum</TableHead>
@@ -134,19 +142,19 @@ export default function ProposalsPage() {
                       ) : proposal.person ? (
                          <div className="flex flex-col">
                            <span>{proposal.person.first_name} {proposal.person.last_name}</span>
-                           <span className="text-xs text-gray-400 font-normal italic">Şirket yok</span>
+                           <span className="text-xs text-gray-400 font-normal italic">Bireysel</span>
                          </div>
                       ) : (
                         <span className="text-gray-400 italic">İsimsiz Teklif</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      {new Date(proposal.created_at).toLocaleDateString("tr-TR")}
+                      {new Date(proposal.proposal_date || proposal.created_at).toLocaleDateString("tr-TR")}
                     </TableCell>
                     <TableCell className="font-semibold text-green-600">
                       {Number(proposal.grand_total || (Number(proposal.total_amount) * 1.2)).toLocaleString("tr-TR", { 
                         style: 'currency', 
-                        currency: proposal.currency || 'EUR' 
+                        currency: (proposal.currency || 'EUR').replace('TL', 'TRY')
                       })}
                     </TableCell>
                     <TableCell>

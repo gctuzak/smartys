@@ -1,6 +1,7 @@
 {
   "name": "smartys",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "NODE_OPTIONS='--dns-result-order=ipv4first' next dev --webpack",

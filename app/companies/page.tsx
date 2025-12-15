@@ -19,13 +19,21 @@ export default function CompaniesPage() {
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
 
   const fetchCompanies = useCallback(async () => {
-    setLoading(true);
-    const result = await getCompaniesAction(page, 20, search);
-    if (result.success) {
-      setCompanies(result.data || []);
-      setTotalPages(result.totalPages || 1);
+    try {
+      setLoading(true);
+      const result = await getCompaniesAction(page, 20, search);
+      if (result.success) {
+        setCompanies(result.data || []);
+        setTotalPages(result.totalPages || 1);
+      } else {
+        toast.error(result.error || "Veriler alınamadı");
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+      toast.error("Beklenmeyen bir hata oluştu");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [page, search]);
 
   useEffect(() => {

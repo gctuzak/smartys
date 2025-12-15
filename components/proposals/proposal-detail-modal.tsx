@@ -130,10 +130,13 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
               <div className="flex items-center gap-2 mb-1">
                 <Hash className="w-4 h-4 text-gray-400" />
                 <h2 className="text-2xl font-bold text-gray-900">Teklif #{data.proposal_no || "-"}</h2>
+                {data.legacy_proposal_no && (
+                   <span className="ml-2 px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-500 font-mono">Ref: {data.legacy_proposal_no}</span>
+                )}
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <Calendar className="w-4 h-4" />
-                <span>{new Date(data.created_at).toLocaleDateString("tr-TR")}</span>
+                <span>{new Date(data.proposal_date || data.created_at).toLocaleDateString("tr-TR")}</span>
               </div>
             </div>
             <div className="mt-4 md:mt-0 flex items-center gap-2">
@@ -192,14 +195,14 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
           </div>
 
           {/* Parties Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
+          <div className={`grid grid-cols-1 ${data.company && data.person ? 'md:grid-cols-2' : ''} gap-8 py-4`}>
             {/* Company Details */}
-            <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-              <div className="flex items-center gap-2 text-gray-900 font-semibold border-b border-gray-200 pb-3 mb-4">
-                <Building2 className="w-5 h-5 text-blue-600" />
-                <h3>Müşteri Bilgileri</h3>
-              </div>
-              {data.company ? (
+            {data.company && (
+              <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                <div className="flex items-center gap-2 text-gray-900 font-semibold border-b border-gray-200 pb-3 mb-4">
+                  <Building2 className="w-5 h-5 text-blue-600" />
+                  <h3>Müşteri Bilgileri</h3>
+                </div>
                 <div className="space-y-4 text-sm">
                   <div>
                     <p className="font-bold text-lg text-gray-900">{data.company.name}</p>
@@ -229,18 +232,16 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
                     )}
                   </div>
                 </div>
-              ) : (
-                <p className="text-gray-500 italic text-sm">Şirket bilgisi bulunamadı.</p>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Person Details */}
-            <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-              <div className="flex items-center gap-2 text-gray-900 font-semibold border-b border-gray-200 pb-3 mb-4">
-                <User className="w-5 h-5 text-purple-600" />
-                <h3>İlgili Kişi</h3>
-              </div>
-              {data.person ? (
+            {data.person && (
+              <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                <div className="flex items-center gap-2 text-gray-900 font-semibold border-b border-gray-200 pb-3 mb-4">
+                  <User className="w-5 h-5 text-purple-600" />
+                  <h3>İlgili Kişi</h3>
+                </div>
                 <div className="space-y-4 text-sm">
                   <div>
                     <p className="font-bold text-lg text-gray-900">{data.person.first_name} {data.person.last_name}</p>
@@ -264,11 +265,34 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
                     )}
                   </div>
                 </div>
-              ) : (
-                <p className="text-gray-500 italic text-sm">İlgili kişi bulunamadı.</p>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Fallback if neither exists */}
+            {!data.company && !data.person && (
+                <div className="col-span-full text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    <p className="text-gray-500 italic">Müşteri veya kişi bilgisi bulunamadı.</p>
+                </div>
+            )}
           </div>
+
+          {/* Extra Details (Notes & Payment) */}
+          {(data.notes || data.payment_terms) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-4">
+               {data.payment_terms && (
+                  <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-100">
+                    <h4 className="text-sm font-semibold text-yellow-800 mb-2">Ödeme Koşulları</h4>
+                    <p className="text-sm text-yellow-700 whitespace-pre-wrap">{data.payment_terms}</p>
+                  </div>
+               )}
+               {data.notes && (
+                  <div className={`${data.payment_terms ? '' : 'col-span-2'} bg-gray-50 rounded-xl p-4 border border-gray-100`}>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Notlar</h4>
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{data.notes}</p>
+                  </div>
+               )}
+            </div>
+          )}
 
           {/* Items Table */}
           <div className="border rounded-lg overflow-hidden">
@@ -331,7 +355,7 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
                   <span className="font-medium text-lg">
                       {Number(data.total_amount).toLocaleString("tr-TR", { 
                           style: 'currency', 
-                          currency: data.currency || 'EUR' 
+                          currency: (data.currency || 'EUR').replace('TL', 'TRY')
                       })}
                   </span>
               </div>
@@ -341,7 +365,7 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
                   <span className="font-medium text-lg">
                       {Number(data.vat_amount || 0).toLocaleString("tr-TR", { 
                           style: 'currency', 
-                          currency: data.currency || 'EUR' 
+                          currency: (data.currency || 'EUR').replace('TL', 'TRY')
                       })}
                   </span>
               </div>
@@ -351,7 +375,7 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
                   <span className="text-2xl font-bold text-blue-600">
                     {Number(data.grand_total || (Number(data.total_amount) + Number(data.vat_amount || 0))).toLocaleString("tr-TR", { 
                         style: 'currency', 
-                        currency: data.currency || 'EUR' 
+                        currency: (data.currency || 'EUR').replace('TL', 'TRY')
                     })}
                   </span>
               </div>

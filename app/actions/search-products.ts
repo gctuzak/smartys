@@ -19,10 +19,12 @@ export async function searchProductsAction(query: string): Promise<ProductSearch
   if (!query || query.length < 2) return [];
 
   try {
+    const sLower = query.toLocaleLowerCase('tr-TR');
+    const sUpper = query.toLocaleUpperCase('tr-TR');
     const { data, error } = await supabase
       .from('products')
       .select('id, name, code, unit, default_price')
-      .or(`name.ilike.%${query}%,code.ilike.%${query}%`)
+      .or(`name.ilike.%${query}%,name.ilike.%${sLower}%,name.ilike.%${sUpper}%,code.ilike.%${query}%,code.ilike.%${sLower}%,code.ilike.%${sUpper}%`)
       .limit(10);
 
     if (error) {

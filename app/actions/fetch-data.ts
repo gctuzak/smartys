@@ -7,7 +7,11 @@ const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+console.log("Supabase URL present:", !!process.env.SUPABASE_URL);
+console.log("Supabase Key present:", !!process.env.SUPABASE_ANON_KEY);
+
 export async function getProposalsAction(page = 1, pageSize = 20, search = "") {
+  console.log("getProposalsAction called", { page, pageSize, search });
   try {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -16,7 +20,7 @@ export async function getProposalsAction(page = 1, pageSize = 20, search = "") {
       .from("proposals")
       .select(`
         *,
-        company:companies!proposals_company_id_companies_id_fk (
+        company:companies (
           name,
           contact_info,
           tax_no,
@@ -36,19 +40,55 @@ export async function getProposalsAction(page = 1, pageSize = 20, search = "") {
       `, { count: "exact" });
 
     if (search) {
+      const sLower = search.toLocaleLowerCase('tr-TR');
+      const sUpper = search.toLocaleUpperCase('tr-TR');
+      
+      let companyIds: string[] = [];
+      let personIds: string[] = [];
+
+      // 1. Find matching companies
+      const { data: companies } = await supabase
+        .from('companies')
+        .select('id')
+        .or(`name.ilike.%${search}%,name.ilike.%${sLower}%,name.ilike.%${sUpper}%`)
+        .limit(50);
+        
+      if (companies) companyIds = companies.map(c => c.id);
+
+      // 2. Find matching persons
+      const { data: persons } = await supabase
+        .from('persons')
+        .select('id')
+        .or(`first_name.ilike.%${search}%,first_name.ilike.%${sLower}%,first_name.ilike.%${sUpper}%,last_name.ilike.%${search}%,last_name.ilike.%${sLower}%,last_name.ilike.%${sUpper}%`)
+        .limit(50);
+        
+      if (persons) personIds = persons.map(p => p.id);
+
+      let orString = `status.ilike.%${search}%,status.ilike.%${sLower}%,status.ilike.%${sUpper}%`;
+
       if (!isNaN(Number(search))) {
-        // If search is a number, try to match proposal_no
-        query = query.or(`proposal_no.eq.${search},status.ilike.%${search}%`);
-      } else {
-        query = query.ilike("status", `%${search}%`);
+        orString += `,proposal_no.eq.${search}`;
       }
+
+      if (companyIds.length > 0) {
+        orString += `,company_id.in.(${companyIds.join(',')})`;
+      }
+
+      if (personIds.length > 0) {
+        orString += `,person_id.in.(${personIds.join(',')})`;
+      }
+      
+      query = query.or(orString);
     }
 
     const { data, count, error } = await query
-      .order("first_name", { ascending: true })
+      .order("created_at", { ascending: false })
+      .order("proposal_no", { ascending: false })
       .range(from, to);
 
     if (error) throw error;
+
+    console.log("getProposalsAction success", { count });
 
     return {
       success: true,
@@ -69,13 +109,16 @@ export async function getCompaniesAction(page = 1, pageSize = 20, search = "") {
 
     let query = supabase
       .from("companies")
-      .select("*, representative:users(first_name, last_name)", { count: "exact" });
+      .select("*", { count: "exact" });
 
     if (search) {
-      query = query.ilike("name", `%${search}%`);
+      const sLower = search.toLocaleLowerCase('tr-TR');
+      const sUpper = search.toLocaleUpperCase('tr-TR');
+      query = query.or(`name.ilike.%${search}%,name.ilike.%${sLower}%,name.ilike.%${sUpper}%`);
     }
 
     const { data, count, error } = await query
+      .order("created_at", { ascending: false })
       .order("name", { ascending: true })
       .range(from, to);
 
@@ -119,8 +162,7 @@ export async function getPersonsAction(companyId?: string, page = 1, pageSize = 
       .from("persons")
       .select(`
         *,
-        company:companies (name),
-        representative:users (first_name, last_name)
+        company:companies (name)
       `, { count: "exact" });
 
     if (companyId) {
@@ -128,10 +170,13 @@ export async function getPersonsAction(companyId?: string, page = 1, pageSize = 
     }
 
     if (search) {
-      query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%`);
+      const sLower = search.toLocaleLowerCase('tr-TR');
+      const sUpper = search.toLocaleUpperCase('tr-TR');
+      query = query.or(`first_name.ilike.%${search}%,first_name.ilike.%${sLower}%,first_name.ilike.%${sUpper}%,last_name.ilike.%${search}%,last_name.ilike.%${sLower}%,last_name.ilike.%${sUpper}%`);
     }
 
     const { data, count, error } = await query
+      .order("created_at", { ascending: false })
       .order("first_name", { ascending: true })
       .range(from, to);
 
@@ -155,7 +200,7 @@ export async function getProposalDetailsAction(id: string) {
       .from("proposals")
       .select(`
         *,
-        company:companies!proposals_company_id_companies_id_fk (
+        company:companies (
           id,
           name,
           contact_info,
@@ -270,11 +315,14 @@ export async function getUsersAction(page = 1, pageSize = 20, search = "") {
       .select("*", { count: "exact" });
 
     if (search) {
-      query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`);
+      const sLower = search.toLocaleLowerCase('tr-TR');
+      const sUpper = search.toLocaleUpperCase('tr-TR');
+      query = query.or(`first_name.ilike.%${search}%,first_name.ilike.%${sLower}%,first_name.ilike.%${sUpper}%,last_name.ilike.%${search}%,last_name.ilike.%${sLower}%,last_name.ilike.%${sUpper}%,email.ilike.%${search}%`);
     }
 
     const { data, count, error } = await query
       .order("created_at", { ascending: false })
+      .order("first_name", { ascending: true })
       .range(from, to);
 
     if (error) throw error;

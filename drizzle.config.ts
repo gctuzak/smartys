@@ -2,6 +2,7 @@ import { defineConfig } from "drizzle-kit";
 import * as dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
+dotenv.config({ path: ".env" });
 
 if (!process.env.DATABASE_URL) {
   console.warn("⚠️ DATABASE_URL is missing");
