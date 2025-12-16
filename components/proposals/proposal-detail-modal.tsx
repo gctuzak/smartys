@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { getProposalDetailsAction } from "@/app/actions/fetch-data";
-import { listDocumentsAction, uploadDocumentAction } from "@/app/actions/documents";
+import { listDocumentsAction, uploadDocumentAction, deleteDocumentAction } from "@/app/actions/documents";
 import { updateProposalStatusAction } from "@/app/actions/update-proposal-status";
 import { generateProposalPDF } from "@/lib/generate-proposal-pdf";
 import { Modal } from "@/components/ui/modal";
-import { Loader2, Building2, User, MapPin, Phone, Mail, Calendar, Hash, Check, FileText, CreditCard, Upload, Download, File as FileIcon, Printer } from "lucide-react";
+import { Loader2, Building2, User, MapPin, Phone, Mail, Calendar, Hash, Check, FileText, CreditCard, Upload, Download, File as FileIcon, Printer, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,27 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleDeleteDocument = async (id: string) => {
+    if (!confirm("Bu dokümanı silmek istediğinize emin misiniz?")) return;
+    
+    setDeletingId(id);
+    try {
+        const result = await deleteDocumentAction(id);
+        if (result.success) {
+            setDocuments(prev => prev.filter(d => d.id !== id));
+            toast.success("Doküman silindi");
+        } else {
+            toast.error(result.error || "Doküman silinemedi");
+        }
+    } catch (error) {
+        toast.error("Bir hata oluştu");
+    } finally {
+        setDeletingId(null);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -474,14 +494,16 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {documents.map((doc) => (
-                            <a
+                            <div
                                 key={doc.id}
-                                href={doc.public_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
                                 className="group flex items-center justify-between rounded-lg border bg-white px-3 py-2.5 hover:border-blue-300 hover:shadow-sm transition-all"
                             >
-                                <div className="flex items-center gap-3 overflow-hidden">
+                                <a 
+                                    href={doc.public_url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="flex items-center gap-3 overflow-hidden flex-1"
+                                >
                                     <div className="bg-gray-100 p-1.5 rounded text-gray-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
                                         <FileIcon className="w-4 h-4" />
                                     </div>
@@ -489,9 +511,27 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
                                         <span className="text-sm font-medium truncate text-gray-900">{doc.original_name}</span>
                                         <span className="text-xs text-gray-500">{new Date(doc.created_at).toLocaleDateString("tr-TR")}</span>
                                     </div>
+                                </a>
+                                <div className="flex items-center gap-1 ml-2">
+                                    <a 
+                                        href={doc.public_url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-blue-600 transition-colors"
+                                        title="İndir"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                    </a>
+                                    <button 
+                                        onClick={() => handleDeleteDocument(doc.id)} 
+                                        className="p-1.5 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
+                                        title="Sil"
+                                        disabled={deletingId === doc.id}
+                                    >
+                                        {deletingId === doc.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                    </button>
                                 </div>
-                                <Download className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
-                            </a>
+                            </div>
                             ))}
                         </div>
                     )}
