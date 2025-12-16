@@ -9,6 +9,7 @@ import { getRepresentativesAction, getPersonsAction } from "@/app/actions/fetch-
 import { toast } from "sonner";
 import { Loader2, Building2, Phone, Mail, MapPin, FileText, Users, History } from "lucide-react";
 import { PastJobsModal } from "@/components/shared/past-jobs-modal";
+import { Combobox } from "@/components/ui/combobox";
 
 interface CompanyModalProps {
   isOpen: boolean;
@@ -212,19 +213,14 @@ export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyMod
             </div>
             <div className="md:col-span-3">
               <label className="text-sm font-medium mb-1.5 block text-gray-700">Temsilci</label>
-              <select
-                name="representative_id"
+              <Combobox
+                options={users.map(u => ({ value: u.id, label: `${u.first_name} ${u.last_name}` }))}
                 value={formData.representative_id}
-                onChange={handleChange}
-                className="flex h-10 w-full rounded-md border border-input bg-gray-50/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <option value="">Seçiniz...</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.first_name} {user.last_name}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setFormData(prev => ({ ...prev, representative_id: value }))}
+                placeholder="Seçiniz..."
+                searchPlaceholder="Temsilci Ara..."
+                emptyText="Temsilci bulunamadı."
+              />
             </div>
             
             <div className="md:col-span-3">

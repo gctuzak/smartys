@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { getCompaniesAction, getRepresentativesAction, getCompanyAction } from "
 import { toast } from "sonner";
 import { Loader2, User, Phone, Mail, MapPin, FileText, Building2, History } from "lucide-react";
 import { PastJobsModal } from "@/components/shared/past-jobs-modal";
+import { Combobox } from "@/components/ui/combobox";
 
 interface PersonModalProps {
   isOpen: boolean;
@@ -21,6 +22,8 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
   const [loading, setLoading] = useState(false);
   const [showPastJobs, setShowPastJobs] = useState(false);
   const [companies, setCompanies] = useState<any[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     company_id: "",
@@ -46,11 +49,22 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
     representative_id: "",
   });
 
+  // Debounced search for companies
+  const handleCompanySearch = useCallback(async (search: string) => {
+    setLoadingCompanies(true);
+    const result = await getCompaniesAction(1, 20, search);
+    if (result.success) {
+      setCompanies(result.data || []);
+    }
+    setLoadingCompanies(false);
+  }, []);
+
   useEffect(() => {
-    // Fetch companies and users for the dropdowns
+    // Fetch initial companies and users
     const fetchData = async () => {
+      setLoadingCompanies(true);
       const [companiesResult, usersResult] = await Promise.all([
-        getCompaniesAction(1, 100),
+        getCompaniesAction(1, 20), // Only fetch first 20 initially
         getRepresentativesAction()
       ]);
 
@@ -68,11 +82,17 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
             loadedCompanies = [...loadedCompanies, companyResult.data];
             // Sort companies by name
             loadedCompanies.sort((a: any, b: any) => a.name.localeCompare(b.name));
+            setSelectedCompany(companyResult.data);
           }
+        } else {
+          setSelectedCompany(companyExists);
         }
+      } else {
+        setSelectedCompany(null);
       }
 
       setCompanies(loadedCompanies);
+      setLoadingCompanies(false);
 
       if (usersResult.success) {
         setUsers(usersResult.data || []);
@@ -201,39 +221,37 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
                 <Building2 className="w-4 h-4 text-gray-500" />
                 Şirket *
               </label>
-              <select
-                name="company_id"
+              <Combobox
+                options={[
+                  ...(selectedCompany && !companies.find(c => c.id === selectedCompany.id) ? [selectedCompany] : []),
+                  ...companies
+                ].map(c => ({ value: c.id, label: c.name }))}
                 value={formData.company_id}
-                onChange={handleChange}
-                className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                required
-              >
-                <option value="">Şirket Seçin</option>
-                {companies.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => {
+                  setFormData(prev => ({ ...prev, company_id: value }));
+                  const company = companies.find(c => c.id === value) || (selectedCompany?.id === value ? selectedCompany : null);
+                  if (company) setSelectedCompany(company);
+                }}
+                placeholder="Şirket Seçin"
+                searchPlaceholder="Şirket Ara..."
+                emptyText="Şirket bulunamadı."
+                loading={loadingCompanies}
+                onSearch={handleCompanySearch}
+              />
             </div>
              <div>
               <label className="text-sm font-medium mb-1.5 block flex items-center gap-1.5">
                 <User className="w-4 h-4 text-gray-500" />
                 Müşteri Temsilcisi
               </label>
-              <select
-                name="representative_id"
+              <Combobox
+                options={users.map(u => ({ value: u.id, label: `${u.first_name} ${u.last_name}` }))}
                 value={formData.representative_id}
-                onChange={handleChange}
-                className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <option value="">Seçiniz...</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.first_name} {user.last_name}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setFormData(prev => ({ ...prev, representative_id: value }))}
+                placeholder="Seçiniz..."
+                searchPlaceholder="Temsilci Ara..."
+                emptyText="Temsilci bulunamadı."
+              />
             </div>
         </div>
 
