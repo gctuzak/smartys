@@ -197,14 +197,16 @@ export async function saveProposalAction(data: ParsedData) {
 
     // 4. Insert Items
     if (data.proposal.items && data.proposal.items.length > 0) {
-      const itemsToInsert = data.proposal.items.map(item => ({
+      const itemsToInsert = data.proposal.items.map((item, index) => ({
         proposal_id: proposalId,
         description: item.description,
-        quantity: item.quantity,
+        quantity: item.quantity ?? null,
         unit: item.unit,
-        unit_price: item.unitPrice,
-        total_price: item.totalPrice,
-        attributes: item.attributes
+        unit_price: item.unitPrice ?? null,
+        total_price: item.totalPrice ?? null,
+        attributes: item.attributes,
+        is_header: item.isHeader ?? false,
+        order: index
       }));
 
       const { error: itemsError } = await supabase

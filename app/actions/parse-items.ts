@@ -32,8 +32,14 @@ export async function parseItemsTextAction(text: string) {
           - quantity (number, default 1)
           - unit (e.g. Adet, m2, kg)
           - unitPrice (number, default 0)
+          - totalPrice (number, optional)
           
           Detect columns intelligently.
+          Common patterns:
+          - Name | Qty | Unit | Unit Price | Total Price
+          - Name | Qty | Unit | Total Price (In this case, assume Unit Price = Total Price / Qty)
+          
+          If you see a column that looks like a total amount, map it to totalPrice.
           `
         },
         {
@@ -47,14 +53,33 @@ export async function parseItemsTextAction(text: string) {
     const result = JSON.parse(completion.choices[0].message.content || "{ \"items\": [] }");
     
     // Normalize
-    const items = (result.items || []).map((i: any) => ({
-        description: i.description || "Ürün",
-        quantity: Number(i.quantity) || 1,
-        unit: i.unit || "Adet",
-        unitPrice: Number(i.unitPrice) || 0,
-        totalPrice: (Number(i.quantity) || 1) * (Number(i.unitPrice) || 0),
-        vatRate: 20
-    }));
+    const items = (result.items || []).map((i: any) => {
+        const quantity = Number(i.quantity) || 1;
+        let unitPrice = Number(i.unitPrice) || 0;
+        let totalPrice = Number(i.totalPrice) || 0;
+
+        // If totalPrice is provided but unitPrice is 0 or missing, calculate unitPrice
+        if (totalPrice && !unitPrice) {
+            unitPrice = totalPrice / quantity;
+        }
+        
+        // If unitPrice is provided but totalPrice is 0 or missing, calculate totalPrice
+        if (unitPrice && !totalPrice) {
+            totalPrice = quantity * unitPrice;
+        }
+
+        // If both are provided, trust the user's totalPrice as requested
+        // (User said: "Zaten sondaki değer toplamı ben veriyorum")
+
+        return {
+            description: i.description || "Ürün",
+            quantity,
+            unit: i.unit || "Adet",
+            unitPrice,
+            totalPrice,
+            vatRate: 20
+        };
+    });
 
     return {
         success: true,

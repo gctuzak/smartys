@@ -89,12 +89,13 @@ export const proposalItems = pgTable("proposal_items", {
   id: uuid("id").defaultRandom().primaryKey(),
   proposalId: uuid("proposal_id").references(() => proposals.id).notNull(),
   description: text("description").notNull(),
-  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }),
   unit: text("unit"),
-  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
-  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }),
+  totalPrice: decimal("total_price", { precision: 10, scale: 2 }),
   attributes: jsonb("attributes"),
   isHeader: boolean("is_header").default(false),
+  order: integer("order").default(0),
 });
 
 export const documents = pgTable("documents", {

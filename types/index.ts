@@ -26,12 +26,13 @@ export interface ProposalItem {
   id?: string;
   proposalId?: string;
   description: string;
-  quantity: number;
+  quantity?: number;
   unit?: string;
-  unitPrice: number;
-  totalPrice: number;
+  unitPrice?: number;
+  totalPrice?: number;
   attributes?: Record<string, unknown>;
   isHeader?: boolean;
+  order?: number;
 }
 
 export interface Proposal {
@@ -80,12 +81,13 @@ export interface ParsedData {
     proposalDate?: Date;
     items: {
       description: string;
-      quantity: number;
+      quantity?: number;
       unit: string;
-      unitPrice: number;
-      totalPrice: number;
+      unitPrice?: number;
+      totalPrice?: number;
       attributes?: Record<string, unknown>;
       isHeader?: boolean;
+      order?: number;
     }[];
   };
 }

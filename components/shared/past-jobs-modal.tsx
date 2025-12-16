@@ -53,9 +53,9 @@ export function PastJobsModal({ isOpen, onClose, entityType, entityId, entityNam
     
     let validCurrency = currency;
     // Basic validation for currency code (3 letters)
-    // If invalid (e.g. number string like "2.206,27"), fallback to TRY
+    // If invalid (e.g. number string like "2.206,27"), fallback to EUR
     if (!validCurrency || validCurrency.length !== 3 || !/^[A-Za-z]{3}$/.test(validCurrency)) {
-      validCurrency = "TRY";
+      validCurrency = "EUR";
     }
 
     try {

@@ -351,7 +351,7 @@ export function ManualProposalBuilder({ onComplete, onCancel }: ManualProposalBu
             items: items,
             totalAmount: items.reduce((sum: number, i: any) => sum + i.totalPrice, 0),
             vatRate: 20,
-            currency: 'TRY',
+            currency: 'EUR',
             notes: parsedCustomer?.project_name ? `Proje: ${parsedCustomer.project_name}` : undefined
         }
       };

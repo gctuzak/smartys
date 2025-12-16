@@ -56,7 +56,7 @@ function fallbackParse(text: string) {
   return {
     company: { name: companyName, contactInfo: {} },
     person: undefined,
-    proposal: { currency: "TRY", totalAmount: 0, items: [] }
+    proposal: { currency: "EUR", totalAmount: 0, items: [] }
   };
 }
 
@@ -121,7 +121,7 @@ export async function parseProposalText(text: string, opts?: { forceAI?: boolean
             "  {",
             '  "company": { "name": "...", "contactInfo": { ... } },',
             '  "person": { "name": "...", "email": "...", "phone": "...", "title": "..." },',
-            '  "proposal": { "currency": "TRY", "totalAmount": 0, "items": [',
+            '  "proposal": { "currency": "EUR", "totalAmount": 0, "items": [',
             '    { "description": "...", "quantity": 0, "unit": "...", "unitPrice": 0, "totalPrice": 0, "attributes": { "enCm": 0, "boyCm": 0, "adet": 0 } }',
             "  ]}",
             "}"
@@ -203,7 +203,7 @@ export async function parseProposalText(text: string, opts?: { forceAI?: boolean
         title: validatedData.person.title || undefined
       } : undefined,
       proposal: {
-        currency: validatedData.proposal.currency || "TRY",
+        currency: validatedData.proposal.currency || "EUR",
         totalAmount,
         items: normItems,
       },

@@ -151,7 +151,7 @@ async function importProposals() {
       const createdAt = excelDateToJSDate(row['Sistem Kayıt Tarihi']) || new Date();
       const notes = row['Teklif Notları'] ? String(row['Teklif Notları']) : null;
       const paymentTerms = row['Ödeme'] ? String(row['Ödeme']) : null;
-      const currency = row['Pr Br'] || 'TRY'; // Default to TRY if missing, or maybe EUR based on schema default? Schema default is EUR. Let's trust input.
+      const currency = row['Pr Br'] || 'EUR'; // Default to TRY if missing, or maybe EUR based on schema default? Schema default is EUR. Let's trust input.
 
       // Duplicate Check
       // If we have legacyId, check if it exists in 'legacy_proposal_no' OR 'notes' (if schema update failed)

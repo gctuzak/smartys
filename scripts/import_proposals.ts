@@ -197,7 +197,7 @@ async function importProposals() {
         : new Date();
       
       const totalAmount = parseFloat(row['Toplam'] || row['Alt Toplam'] || row['Tutar'] || "0");
-      const currency = "TRY"; // Defaulting to TRY as no currency column in checked items, or check 'Pr Br'?
+      const currency = "EUR"; // Defaulting to TRY as no currency column in checked items, or check 'Pr Br'?
       // Sample data shows 'Pr Br' is null. Assuming TRY.
       
       const notes = [
@@ -255,7 +255,7 @@ async function importProposals() {
                 company_id: companyId,
                 person_id: personId,
                 notes: notes,
-                currency: 'TRY' 
+                currency: 'EUR' 
             })
             .select("id")
             .single();

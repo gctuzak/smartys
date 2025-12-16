@@ -48,9 +48,9 @@ export async function getPastJobsAction(type: 'company' | 'person', id: string) 
 
     // Normalize and combine
     const sanitizeCurrency = (c: any) => {
-      if (typeof c !== 'string') return 'TRY';
+      if (typeof c !== 'string') return 'EUR';
       const clean = c.trim().toUpperCase();
-      return /^[A-Z]{3}$/.test(clean) ? clean : 'TRY';
+      return /^[A-Z]{3}$/.test(clean) ? clean : 'EUR';
     };
 
     const combinedJobs = [

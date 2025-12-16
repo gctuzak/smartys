@@ -312,48 +312,60 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
               </TableHeader>
               <TableBody>
                 {data.items?.map((item: any) => (
-                  <TableRow key={item.id} className="hover:bg-gray-50/50">
-                    <TableCell className="align-top">
-                        <div className="font-medium text-gray-900">{item.description}</div>
-                    </TableCell>
-                    <TableCell className="align-top">
-                        <div className="flex flex-wrap gap-2">
+                  <TableRow key={item.id} className={item.is_header ? "bg-gray-100 font-semibold" : "hover:bg-gray-50/50"}>
+                    {item.is_header ? (
+                      <TableCell colSpan={5} className="py-3 text-gray-800 align-top">
+                        {item.description}
+                      </TableCell>
+                    ) : (
+                      <>
+                        <TableCell className="align-top">
+                          <div className="font-medium text-gray-900">{item.description}</div>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="flex flex-wrap gap-2">
                             {/* En/Boy/Adet Badges */}
-                            {(item.attributes?.['enCm'] || item.attributes?.['En'] || item.attributes?.['en']) && (
-                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                    En: {item.attributes?.['enCm'] || item.attributes?.['En'] || item.attributes?.['en']}
-                                </span>
+                            {(item.attributes?.["enCm"] || item.attributes?.["En"] || item.attributes?.["en"]) && (
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                En: {item.attributes?.["enCm"] || item.attributes?.["En"] || item.attributes?.["en"]}
+                              </span>
                             )}
-                            {(item.attributes?.['boyCm'] || item.attributes?.['Boy'] || item.attributes?.['boy']) && (
-                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                    Boy: {item.attributes?.['boyCm'] || item.attributes?.['Boy'] || item.attributes?.['boy']}
-                                </span>
+                            {(item.attributes?.["boyCm"] || item.attributes?.["Boy"] || item.attributes?.["boy"]) && (
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                Boy: {item.attributes?.["boyCm"] || item.attributes?.["Boy"] || item.attributes?.["boy"]}
+                              </span>
                             )}
-                             {(item.attributes?.['adet'] || item.attributes?.['Adet']) && (
-                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                    Adet: {item.attributes?.['adet'] || item.attributes?.['Adet']}
-                                </span>
+                            {(item.attributes?.["adet"] || item.attributes?.["Adet"]) && (
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                Adet: {item.attributes?.["adet"] || item.attributes?.["Adet"]}
+                              </span>
                             )}
-                            
+
                             {/* Other Attributes */}
-                            {item.attributes && Object.entries(item.attributes)
-                                .filter(([key]) => !['en', 'boy', 'adet', 'encm', 'boycm'].includes(key.toLowerCase()))
+                            {item.attributes &&
+                              Object.entries(item.attributes)
+                                .filter(([key]) => !["en", "boy", "adet", "encm", "boycm"].includes(key.toLowerCase()))
                                 .map(([key, value]) => (
-                                    <span key={key} className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                                        {key}: {value as any}
-                                    </span>
-                            ))}
-                        </div>
-                    </TableCell>
-                    <TableCell className="text-right align-top font-medium text-gray-700">
-                        {item.quantity} {item.unit}
-                    </TableCell>
-                    <TableCell className="text-right align-top text-gray-600">
-                        {Number(item.unit_price).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {data.currency}
-                    </TableCell>
-                    <TableCell className="text-right align-top font-semibold text-gray-900">
-                        {Number(item.total_price).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {data.currency}
-                    </TableCell>
+                                  <span
+                                    key={key}
+                                    className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100"
+                                  >
+                                    {key}: {value as any}
+                                  </span>
+                                ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right align-top font-medium text-gray-700">
+                          {item.quantity} {item.unit}
+                        </TableCell>
+                        <TableCell className="text-right align-top text-gray-600">
+                          {Number(item.unit_price || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {data.currency}
+                        </TableCell>
+                        <TableCell className="text-right align-top font-semibold text-gray-900">
+                          {Number(item.total_price || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {data.currency}
+                        </TableCell>
+                      </>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
