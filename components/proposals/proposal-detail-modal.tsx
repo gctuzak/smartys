@@ -4,8 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import { getProposalDetailsAction } from "@/app/actions/fetch-data";
 import { listDocumentsAction, uploadDocumentAction } from "@/app/actions/documents";
 import { updateProposalStatusAction } from "@/app/actions/update-proposal-status";
+import { generateProposalPDF } from "@/lib/generate-proposal-pdf";
 import { Modal } from "@/components/ui/modal";
-import { Loader2, Building2, User, MapPin, Phone, Mail, Calendar, Hash, Check, FileText, CreditCard, Upload, Download, File } from "lucide-react";
+import { Loader2, Building2, User, MapPin, Phone, Mail, Calendar, Hash, Check, FileText, CreditCard, Upload, Download, File as FileIcon, Printer } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
   const [fileInputKey, setFileInputKey] = useState(0);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -72,6 +74,45 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
   const handleStatusChange = (newStatus: string) => {
     setSelectedStatus(newStatus);
     setIsDropdownOpen(false);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!data) return;
+    setIsGeneratingPDF(true);
+    try {
+      const doc = await generateProposalPDF(data);
+      const filename = `Teklif-${data.proposal_no || "Detay"}.pdf`;
+      
+      // 1. İndir
+      doc.save(filename);
+
+      // 2. Sisteme Kaydet
+      const blob = doc.output('blob');
+      const file = new File([blob], filename, { type: "application/pdf" });
+      
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", "pdf");
+      formData.append("proposalId", data.id);
+      if (data.company?.id) formData.append("companyId", data.company.id);
+      if (data.person?.id) formData.append("personId", data.person.id);
+
+      const res = await uploadDocumentAction(formData);
+      if (res.success) {
+         const docs = await listDocumentsAction({ proposalId: data.id });
+         if (docs.success) setDocuments(docs.data || []);
+         toast.success("PDF indirildi ve sisteme kaydedildi");
+      } else {
+         toast.success("PDF indirildi ancak sisteme kaydedilemedi");
+         console.error(res.error);
+      }
+
+    } catch (error) {
+      console.error(error);
+      toast.error("PDF oluşturulurken bir hata oluştu");
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   const handleSaveChanges = async () => {
@@ -148,6 +189,21 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
             </div>
             
             <div className="mt-4 md:mt-0 flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleDownloadPDF} 
+                disabled={isGeneratingPDF}
+                className="bg-white hover:bg-gray-50 text-gray-700 border-gray-200 shadow-sm"
+              >
+                {isGeneratingPDF ? (
+                  <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                ) : (
+                  <Printer className="w-3 h-3 mr-2" />
+                )}
+                PDF İndir
+              </Button>
+
               {data.status !== selectedStatus && (
                 <Button 
                   onClick={handleSaveChanges} 
@@ -402,7 +458,7 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
                  <div className="border rounded-xl p-5 bg-gray-50/30">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-base font-semibold flex items-center gap-2">
-                            <File className="w-4 h-4 text-gray-500" />
+                            <FileIcon className="w-4 h-4 text-gray-500" />
                             Dokümanlar
                         </h3>
                         <label className="inline-flex items-center justify-center px-3 py-1.5 rounded-md border bg-white text-xs font-medium cursor-pointer hover:bg-gray-50 transition-colors shadow-sm">
@@ -427,7 +483,7 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
                             >
                                 <div className="flex items-center gap-3 overflow-hidden">
                                     <div className="bg-gray-100 p-1.5 rounded text-gray-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                                        <File className="w-4 h-4" />
+                                        <FileIcon className="w-4 h-4" />
                                     </div>
                                     <div className="flex flex-col min-w-0">
                                         <span className="text-sm font-medium truncate text-gray-900">{doc.original_name}</span>
