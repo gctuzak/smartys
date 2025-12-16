@@ -7,6 +7,7 @@ export const users = pgTable("users", {
   lastName: text("last_name").notNull(),
   email: text("email").notNull().unique(),
   phone: text("phone"),
+  password: text("password").default("123456"),
   role: text("role").default("representative"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -113,61 +114,6 @@ export const documents = pgTable("documents", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const usersRelations = relations(users, ({ many }) => ({
-  companies: many(companies),
-  persons: many(persons),
-  orders: many(orders),
-}));
-
-export const companiesRelations = relations(companies, ({ many, one }) => ({
-  proposals: many(proposals),
-  persons: many(persons),
-  documents: many(documents),
-  orders: many(orders),
-  representative: one(users, {
-    fields: [companies.representativeId],
-    references: [users.id],
-  }),
-}));
-
-export const personsRelations = relations(persons, ({ one, many }) => ({
-  company: one(companies, {
-    fields: [persons.companyId],
-    references: [companies.id],
-  }),
-  representative: one(users, {
-    fields: [persons.representativeId],
-    references: [users.id],
-  }),
-  proposals: many(proposals),
-  documents: many(documents),
-  orders: many(orders),
-}));
-
-export const proposalsRelations = relations(proposals, ({ one, many }) => ({
-  company: one(companies, {
-    fields: [proposals.companyId],
-    references: [companies.id],
-  }),
-  person: one(persons, {
-    fields: [proposals.personId],
-    references: [persons.id],
-  }),
-  items: many(proposalItems),
-  documents: many(documents),
-  order: one(orders, {
-    fields: [proposals.id],
-    references: [orders.proposalId],
-  }),
-}));
-
-export const proposalItemsRelations = relations(proposalItems, ({ one }) => ({
-  proposal: one(proposals, {
-    fields: [proposalItems.proposalId],
-    references: [proposals.id],
-  }),
-}));
-
 export const products = pgTable("products", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
@@ -197,6 +143,85 @@ export const orders = pgTable("orders", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const activities = pgTable("activities", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  type: text("type").notNull(), // TASK, CALL, MEETING, EMAIL, NOTE
+  subject: text("subject").notNull(),
+  description: text("description"),
+  status: text("status").default("OPEN"), // OPEN, IN_PROGRESS, COMPLETED, CANCELED
+  priority: text("priority").default("MEDIUM"), // LOW, MEDIUM, HIGH
+  dueDate: timestamp("due_date"),
+  assignedTo: uuid("assigned_to").references(() => users.id).notNull(),
+  contactId: uuid("contact_id").references(() => persons.id),
+  companyId: uuid("company_id").references(() => companies.id),
+  proposalId: uuid("proposal_id").references(() => proposals.id),
+  isRecurring: boolean("is_recurring").default(false),
+  recurrenceRule: jsonb("recurrence_rule"),
+  reminders: jsonb("reminders"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// RELATIONS
+
+export const usersRelations = relations(users, ({ many }) => ({
+  companies: many(companies),
+  persons: many(persons),
+  orders: many(orders),
+  activities: many(activities),
+}));
+
+export const companiesRelations = relations(companies, ({ many, one }) => ({
+  proposals: many(proposals),
+  persons: many(persons),
+  documents: many(documents),
+  orders: many(orders),
+  activities: many(activities),
+  representative: one(users, {
+    fields: [companies.representativeId],
+    references: [users.id],
+  }),
+}));
+
+export const personsRelations = relations(persons, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [persons.companyId],
+    references: [companies.id],
+  }),
+  representative: one(users, {
+    fields: [persons.representativeId],
+    references: [users.id],
+  }),
+  proposals: many(proposals),
+  documents: many(documents),
+  orders: many(orders),
+  activities: many(activities),
+}));
+
+export const proposalsRelations = relations(proposals, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [proposals.companyId],
+    references: [companies.id],
+  }),
+  person: one(persons, {
+    fields: [proposals.personId],
+    references: [persons.id],
+  }),
+  items: many(proposalItems),
+  documents: many(documents),
+  order: one(orders, {
+    fields: [proposals.id],
+    references: [orders.proposalId],
+  }),
+  activities: many(activities),
+}));
+
+export const proposalItemsRelations = relations(proposalItems, ({ one }) => ({
+  proposal: one(proposals, {
+    fields: [proposalItems.proposalId],
+    references: [proposals.id],
+  }),
+}));
+
 export const ordersRelations = relations(orders, ({ one }) => ({
   proposal: one(proposals, {
     fields: [orders.proposalId],
@@ -213,5 +238,24 @@ export const ordersRelations = relations(orders, ({ one }) => ({
   representative: one(users, {
     fields: [orders.representativeId],
     references: [users.id],
+  }),
+}));
+
+export const activitiesRelations = relations(activities, ({ one }) => ({
+  assignedToUser: one(users, {
+    fields: [activities.assignedTo],
+    references: [users.id],
+  }),
+  contact: one(persons, {
+    fields: [activities.contactId],
+    references: [persons.id],
+  }),
+  company: one(companies, {
+    fields: [activities.companyId],
+    references: [companies.id],
+  }),
+  proposal: one(proposals, {
+    fields: [activities.proposalId],
+    references: [proposals.id],
   }),
 }));

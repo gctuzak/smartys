@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { logoutAction } from "@/app/actions/auth";
 import { 
   LayoutDashboard, 
   FileText, 
@@ -12,11 +13,16 @@ import {
   PlusCircle,
   Settings,
   UserCheck,
-  ShoppingCart
+  ShoppingCart,
+  ListTodo,
+  User,
+  LogOut
 } from "lucide-react";
 
 const navigation = [
-  { name: "Teklif Oluştur", href: "/", icon: PlusCircle },
+  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Teklif Oluştur", href: "/create-proposal", icon: PlusCircle },
+  { name: "Görevler", href: "/tasks", icon: ListTodo },
   { name: "Teklifler", href: "/proposals", icon: FileText },
   { name: "Siparişler", href: "/orders", icon: ShoppingCart },
   { name: "Şirketler", href: "/companies", icon: Building2 },
@@ -54,8 +60,24 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="border-t border-gray-800 p-4">
-        <div className="flex items-center gap-x-3 px-2 py-2 text-sm font-semibold leading-6 text-gray-400">
+      <div className="border-t border-gray-800 p-4 space-y-1">
+        <Link
+          href="/profile"
+          className="flex items-center gap-x-3 rounded-md px-2 py-2 text-sm font-semibold leading-6 text-gray-400 hover:bg-gray-800 hover:text-white"
+        >
+          <User className="h-6 w-6 shrink-0" aria-hidden="true" />
+          <span>Profilim</span>
+        </Link>
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            className="flex w-full items-center gap-x-3 rounded-md px-2 py-2 text-sm font-semibold leading-6 text-gray-400 hover:bg-gray-800 hover:text-white"
+          >
+            <LogOut className="h-6 w-6 shrink-0" aria-hidden="true" />
+            <span>Çıkış Yap</span>
+          </button>
+        </form>
+        <div className="flex items-center gap-x-3 px-2 py-2 text-sm font-semibold leading-6 text-gray-400 opacity-50">
             <Settings className="h-6 w-6 shrink-0" aria-hidden="true" />
             <span>Ayarlar v1.0</span>
         </div>

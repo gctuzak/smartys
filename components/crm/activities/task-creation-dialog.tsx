@@ -1,0 +1,369 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import { CalendarIcon, Loader2, Plus } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Combobox } from "@/components/ui/combobox";
+import {
+  createActivity,
+  getActivityOptions,
+  updateActivity,
+  type Activity,
+} from "@/app/actions/activities";
+import { createActivitySchema } from "@/lib/schemas/activities";
+
+// Extend schema for form usage if needed, or use as is
+const formSchema = createActivitySchema;
+type FormValues = z.input<typeof formSchema>;
+
+interface TaskCreationDialogProps {
+  trigger?: React.ReactNode;
+  defaultOpen?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSuccess?: () => void;
+  activityToEdit?: Activity;
+}
+
+export function TaskCreationDialog({
+  trigger,
+  defaultOpen = false,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  onSuccess,
+  activityToEdit,
+}: TaskCreationDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = controlledOnOpenChange || setInternalOpen;
+
+  const [loading, setLoading] = useState(false);
+  const [optionsLoading, setOptionsLoading] = useState(false);
+  const [options, setOptions] = useState<{
+    users: { value: string; label: string }[];
+    persons: { value: string; label: string; companyId?: string }[];
+    companies: { value: string; label: string }[];
+    proposals: { value: string; label: string; companyId?: string; contactId?: string }[];
+  }>({ users: [], persons: [], companies: [], proposals: [] });
+
+  const formatDateForInput = (date?: Date | string | null) => {
+    if (!date) return undefined;
+    const d = new Date(date);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  };
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      type: activityToEdit?.type || "TASK",
+      subject: activityToEdit?.subject || "",
+      description: activityToEdit?.description || "",
+      priority: activityToEdit?.priority || "MEDIUM",
+      dueDate: formatDateForInput(activityToEdit?.dueDate),
+      assignedTo: activityToEdit?.assignedTo,
+      contactId: activityToEdit?.contactId,
+      companyId: activityToEdit?.companyId,
+      proposalId: activityToEdit?.proposalId,
+      isRecurring: activityToEdit?.isRecurring || false,
+    },
+  });
+
+  const watchedCompanyId = watch("companyId");
+  const watchedContactId = watch("contactId");
+  const watchedProposalId = watch("proposalId");
+
+  const filteredPersons = options.persons.filter(p => {
+    if (watchedCompanyId && p.companyId && p.companyId !== watchedCompanyId) return false;
+    return true;
+  });
+
+  const filteredProposals = options.proposals.filter(p => {
+    if (watchedCompanyId && p.companyId && p.companyId !== watchedCompanyId) return false;
+    if (watchedContactId && p.contactId && p.contactId !== watchedContactId) return false;
+    return true;
+  });
+
+  // Auto-select Company when Person is selected
+  useEffect(() => {
+    if (watchedContactId) {
+      const person = options.persons.find(p => p.value === watchedContactId);
+      if (person?.companyId && !watchedCompanyId) {
+        setValue("companyId", person.companyId);
+      }
+    }
+  }, [watchedContactId, options.persons, setValue, watchedCompanyId]);
+
+  // Auto-select Company and Person when Proposal is selected
+  useEffect(() => {
+    if (watchedProposalId) {
+      const proposal = options.proposals.find(p => p.value === watchedProposalId);
+      if (proposal?.companyId && !watchedCompanyId) {
+        setValue("companyId", proposal.companyId);
+      }
+      if (proposal?.contactId && !watchedContactId) {
+        setValue("contactId", proposal.contactId);
+      }
+    }
+  }, [watchedProposalId, options.proposals, setValue, watchedCompanyId, watchedContactId]);
+
+  // Reset form when activityToEdit changes
+  useEffect(() => {
+    if (activityToEdit) {
+      reset({
+        type: activityToEdit.type,
+        subject: activityToEdit.subject,
+        description: activityToEdit.description || "",
+        priority: activityToEdit.priority,
+        dueDate: formatDateForInput(activityToEdit.dueDate),
+        assignedTo: activityToEdit.assignedTo,
+        contactId: activityToEdit.contactId,
+        companyId: activityToEdit.companyId,
+        proposalId: activityToEdit.proposalId,
+        isRecurring: activityToEdit.isRecurring || false,
+      });
+    }
+  }, [activityToEdit, reset]);
+
+
+  const isRecurring = watch("isRecurring");
+
+  useEffect(() => {
+    if (open) {
+      console.log("Dialog opened, fetching options...");
+      setOptionsLoading(true);
+      getActivityOptions().then((res) => {
+        console.log("Options response:", res);
+        if (res.success && res.data) {
+          setOptions(res.data);
+        }
+      }).catch(err => console.error("Error calling getActivityOptions:", err))
+      .finally(() => setOptionsLoading(false));
+    }
+  }, [open]);
+
+  const onSubmit = async (data: FormValues) => {
+    setLoading(true);
+    try {
+      let result;
+      if (activityToEdit) {
+        result = await updateActivity(activityToEdit.id, data);
+      } else {
+        result = await createActivity(data);
+      }
+
+      if (result.success) {
+        toast.success(result.message);
+        setOpen(false);
+        reset();
+        onSuccess?.();
+      } else {
+        toast.error(result.error);
+      }
+    } catch (error) {
+      toast.error("Beklenmeyen bir hata oluştu.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {trigger || (
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Görev Oluştur
+          </Button>
+        )}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{activityToEdit ? "Aktiviteyi Düzenle" : "Yeni Aktivite / Görev"}</DialogTitle>
+          <DialogDescription>
+            {activityToEdit ? "Mevcut aktivite detaylarını güncelleyin." : "Yeni bir görev, arama veya toplantı kaydı oluşturun."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Aktivite Türü</label>
+              <select
+                {...register("type")}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="TASK">Görev (Task)</option>
+                <option value="CALL">Arama (Call)</option>
+                <option value="MEETING">Toplantı (Meeting)</option>
+                <option value="EMAIL">E-posta (Email)</option>
+                <option value="NOTE">Not (Note)</option>
+              </select>
+              {errors.type && (
+                <p className="text-xs text-red-500">{errors.type.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Öncelik</label>
+              <select
+                {...register("priority")}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="LOW">Düşük</option>
+                <option value="MEDIUM">Orta</option>
+                <option value="HIGH">Yüksek</option>
+              </select>
+              {errors.priority && (
+                <p className="text-xs text-red-500">{errors.priority.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Konu *</label>
+            <Input {...register("subject")} placeholder="Örn: Müşteri takibi" />
+            {errors.subject && (
+              <p className="text-xs text-red-500">{errors.subject.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Açıklama</label>
+            <textarea
+              {...register("description")}
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder="Detaylı açıklama..."
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Son Tarih</label>
+              <Input
+                type="datetime-local"
+                {...register("dueDate")}
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Atanan Kişi *</label>
+              <Combobox
+                options={options.users}
+                value={watch("assignedTo")}
+                onChange={(val) => setValue("assignedTo", val, { shouldValidate: true, shouldDirty: true })}
+                placeholder="Kullanıcı Seç..."
+                searchPlaceholder="Kullanıcı ara..."
+                loading={optionsLoading}
+                modal
+              />
+              {errors.assignedTo && (
+                <p className="text-xs text-red-500">{errors.assignedTo.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-2 border-t">
+            <h4 className="text-sm font-semibold text-muted-foreground mb-2">İlişkiler</h4>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">İlgili Kişi</label>
+                <Combobox
+                  options={filteredPersons}
+                  value={watch("contactId") || undefined}
+                  onChange={(val) => setValue("contactId", val || null, { shouldValidate: true, shouldDirty: true })}
+                  placeholder="Kişi Seç..."
+                  searchPlaceholder="Kişi ara..."
+                  loading={optionsLoading}
+                  modal
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">İlgili Firma</label>
+                <Combobox
+                  options={options.companies}
+                  value={watch("companyId") || undefined}
+                  onChange={(val) => setValue("companyId", val || null, { shouldValidate: true, shouldDirty: true })}
+                  placeholder="Firma Seç..."
+                  searchPlaceholder="Firma ara..."
+                  loading={optionsLoading}
+                  modal
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">İlgili Teklif</label>
+              <Combobox
+                options={filteredProposals}
+                value={watch("proposalId") || undefined}
+                onChange={(val) => setValue("proposalId", val || null, { shouldValidate: true, shouldDirty: true })}
+                placeholder="Teklif Seç..."
+                searchPlaceholder="Teklif ara..."
+                loading={optionsLoading}
+                modal
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 pt-2">
+            <input
+              type="checkbox"
+              id="isRecurring"
+              {...register("isRecurring")}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <label htmlFor="isRecurring" className="text-sm font-medium">
+              Tekrarlayan Görev (Gelişmiş)
+            </label>
+          </div>
+          
+          {isRecurring && (
+            <div className="p-3 bg-muted/50 rounded-md text-sm text-muted-foreground">
+              Tekrarlama kuralları şu an için sadece basit tekrarları destekler. (Geliştirme aşamasında)
+            </div>
+          )}
+
+          <DialogFooter className="mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={loading}
+            >
+              İptal
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Kaydet
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

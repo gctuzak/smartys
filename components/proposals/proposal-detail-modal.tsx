@@ -6,11 +6,13 @@ import { listDocumentsAction, uploadDocumentAction, deleteDocumentAction } from 
 import { updateProposalStatusAction } from "@/app/actions/update-proposal-status";
 import { generateProposalPDF } from "@/lib/generate-proposal-pdf";
 import { Modal } from "@/components/ui/modal";
-import { Loader2, Building2, User, MapPin, Phone, Mail, Calendar, Hash, Check, FileText, CreditCard, Upload, Download, File as FileIcon, Printer, Trash2 } from "lucide-react";
+import { Loader2, Building2, User, MapPin, Phone, Mail, Calendar, Hash, Check, FileText, CreditCard, Upload, Download, File as FileIcon, Printer, Trash2, ListTodo } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ActivityTimeline } from "@/components/crm/activities/activity-timeline";
+
 
 const PROPOSAL_STATUSES = [
   { value: 'draft', label: 'Taslak Teklif', color: 'bg-gray-100 text-gray-800 border-gray-200' },
@@ -535,6 +537,15 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
                             ))}
                         </div>
                     )}
+                 </div>
+
+                 {/* Activities Section */}
+                 <div className="border rounded-xl p-5 bg-white">
+                    <div className="flex items-center gap-2 mb-4">
+                        <ListTodo className="w-4 h-4 text-gray-500" />
+                        <h3 className="text-base font-semibold">Aktiviteler ve Görevler</h3>
+                    </div>
+                    {proposalId && <ActivityTimeline proposalId={proposalId} />}
                  </div>
              </div>
 

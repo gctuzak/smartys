@@ -35,6 +35,7 @@ interface ComboboxProps {
   onSearch?: (term: string) => void
   disabled?: boolean
   className?: string
+  modal?: boolean
 }
 
 export function Combobox({
@@ -48,6 +49,7 @@ export function Combobox({
   onSearch,
   disabled = false,
   className,
+  modal = false,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [searchTerm, setSearchTerm] = React.useState("")
@@ -64,8 +66,15 @@ export function Combobox({
 
   const selectedOption = options.find((option) => option.value === value)
 
+  const filter = (value: string, search: string) => {
+    if (!search) return 1;
+    const normalizedValue = value.toLocaleLowerCase('tr-TR');
+    const normalizedSearch = search.toLocaleLowerCase('tr-TR');
+    return normalizedValue.includes(normalizedSearch) ? 1 : 0;
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={modal}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -79,7 +88,7 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        <Command shouldFilter={!onSearch}>
+        <Command shouldFilter={!onSearch} filter={!onSearch ? filter : undefined}>
           <CommandInput 
             placeholder={searchPlaceholder} 
             value={searchTerm}
