@@ -10,8 +10,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 console.log("Supabase URL present:", !!process.env.SUPABASE_URL);
 console.log("Supabase Key present:", !!process.env.SUPABASE_ANON_KEY);
 
-export async function getProposalsAction(page = 1, pageSize = 20, search = "") {
-  console.log("getProposalsAction called", { page, pageSize, search });
+export async function getProposalsAction(page = 1, pageSize = 20, search = "", sortField = "proposal_no", sortOrder = "desc") {
+  console.log("getProposalsAction called", { page, pageSize, search, sortField, sortOrder });
   try {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -81,9 +81,21 @@ export async function getProposalsAction(page = 1, pageSize = 20, search = "") {
       query = query.or(orString);
     }
 
+    // Apply sorting
+    const isAsc = sortOrder === "asc";
+    
+    // Default sorting logic if no specific sort provided (though default is proposal_no desc)
+    if (sortField) {
+        query = query.order(sortField, { ascending: isAsc });
+    } else {
+        query = query
+        .order("proposal_no", { ascending: false });
+    }
+
+    // Always secondary sort by ID to ensure stable pagination
+    query = query.order("id", { ascending: false });
+
     const { data, count, error } = await query
-      .order("created_at", { ascending: false })
-      .order("proposal_no", { ascending: false })
       .range(from, to);
 
     if (error) throw error;
@@ -233,20 +245,54 @@ export async function getProposalDetailsAction(id: string) {
   }
 }
 
-export async function getRepresentativesAction() {
+export async function getRepresentativesAction(page = 1, pageSize = 20, search = "") {
+  try {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let query = supabase
+      .from("users")
+      .select("id, first_name, last_name", { count: "exact" })
+      .eq("role", "representative");
+
+    if (search) {
+      const sLower = search.toLocaleLowerCase('tr-TR');
+      const sUpper = search.toLocaleUpperCase('tr-TR');
+      query = query.or(`first_name.ilike.%${search}%,first_name.ilike.%${sLower}%,first_name.ilike.%${sUpper}%,last_name.ilike.%${search}%,last_name.ilike.%${sLower}%,last_name.ilike.%${sUpper}%`);
+    }
+
+    const { data, count, error } = await query
+      .order("first_name", { ascending: true })
+      .range(from, to);
+
+    if (error) throw error;
+
+    return { 
+      success: true, 
+      data: data as any[],
+      count: count || 0,
+      totalPages: Math.ceil((count || 0) / pageSize),
+    };
+  } catch (error) {
+    console.error("Get Representatives Error:", error);
+    return { success: false, error: "Temsilciler getirilemedi." };
+  }
+}
+
+export async function getUserAction(id: string) {
   try {
     const { data, error } = await supabase
       .from("users")
       .select("id, first_name, last_name")
-      .eq("role", "representative")
-      .order("first_name", { ascending: true });
+      .eq("id", id)
+      .single();
 
     if (error) throw error;
 
     return { success: true, data };
   } catch (error) {
-    console.error("Get Representatives Error:", error);
-    return { success: false, error: "Temsilciler getirilemedi." };
+    console.error("Get User Error:", error);
+    return { success: false, error: "Kullanıcı getirilemedi." };
   }
 }
 
@@ -341,6 +387,42 @@ export async function getUsersAction(page = 1, pageSize = 20, search = "") {
 
 export async function deleteUserAction(id: string) {
     try {
+        // Check if user is representative for any company
+        const { count: companyCount, error: companyCheckError } = await supabase
+            .from("companies")
+            .select("id", { count: "exact", head: true })
+            .eq("representative_id", id);
+        
+        if (companyCheckError) throw companyCheckError;
+
+        if (companyCount && companyCount > 0) {
+            return { success: false, error: "Bu kullanıcıya bağlı şirketler var. Önce şirketlerdeki temsilci atamasını kaldırmalısınız." };
+        }
+
+        // Check if user is representative for any person
+        const { count: personCount, error: personCheckError } = await supabase
+            .from("persons")
+            .select("id", { count: "exact", head: true })
+            .eq("representative_id", id);
+        
+        if (personCheckError) throw personCheckError;
+
+        if (personCount && personCount > 0) {
+            return { success: false, error: "Bu kullanıcıya bağlı kişiler var. Önce kişilerdeki temsilci atamasını kaldırmalısınız." };
+        }
+
+        // Check if user has orders
+        const { count: orderCount, error: orderCheckError } = await supabase
+            .from("orders")
+            .select("id", { count: "exact", head: true })
+            .eq("representative_id", id);
+        
+        if (orderCheckError) throw orderCheckError;
+
+        if (orderCount && orderCount > 0) {
+            return { success: false, error: "Bu kullanıcıya ait siparişler var. Kullanıcı silinemez." };
+        }
+
         const { error } = await supabase
             .from("users")
             .delete()

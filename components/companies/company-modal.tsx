@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { saveCompanyAction } from "@/app/actions/save-company";
-import { getRepresentativesAction, getPersonsAction } from "@/app/actions/fetch-data";
+import { getRepresentativesAction, getPersonsAction, getUserAction } from "@/app/actions/fetch-data";
 import { toast } from "sonner";
 import { Loader2, Building2, Phone, Mail, MapPin, FileText, Users, History } from "lucide-react";
 import { PastJobsModal } from "@/components/shared/past-jobs-modal";
@@ -22,6 +22,8 @@ export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyMod
   const [loading, setLoading] = useState(false);
   const [showPastJobs, setShowPastJobs] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
   const [persons, setPersons] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: "",
@@ -47,18 +49,50 @@ export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyMod
     representative_id: "",
   });
 
+  // Debounced search for users
+  const handleUserSearch = useCallback(async (search: string) => {
+    setLoadingUsers(true);
+    const result = await getRepresentativesAction(1, 20, search);
+    if (result.success) {
+      setUsers(result.data || []);
+    }
+    setLoadingUsers(false);
+  }, []);
+
   useEffect(() => {
     // Fetch users for the dropdown
     const fetchUsers = async () => {
-      const result = await getRepresentativesAction();
+      setLoadingUsers(true);
+      const result = await getRepresentativesAction(1, 20);
+      let loadedUsers: any[] = [];
       if (result.success) {
-        setUsers(result.data || []);
+        loadedUsers = result.data || [];
       }
+      
+      // If we are editing and representative is not in list, fetch it
+      if (company?.representative_id) {
+        const userExists = loadedUsers.find((u: any) => u.id === company.representative_id);
+        if (!userExists) {
+            const userResult = await getUserAction(company.representative_id);
+            if (userResult.success && userResult.data) {
+                loadedUsers = [...loadedUsers, userResult.data];
+                loadedUsers.sort((a: any, b: any) => a.first_name.localeCompare(b.first_name));
+                setSelectedUser(userResult.data);
+            }
+        } else {
+            setSelectedUser(userExists);
+        }
+      } else {
+        setSelectedUser(null);
+      }
+
+      setUsers(loadedUsers);
+      setLoadingUsers(false);
     };
     if (isOpen) {
       fetchUsers();
     }
-  }, [isOpen]);
+  }, [isOpen, company]);
 
   useEffect(() => {
     if (company) {
@@ -214,12 +248,21 @@ export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyMod
             <div className="md:col-span-3">
               <label className="text-sm font-medium mb-1.5 block text-gray-700">Temsilci</label>
               <Combobox
-                options={users.map(u => ({ value: u.id, label: `${u.first_name} ${u.last_name}` }))}
+                options={[
+                  ...(selectedUser && !users.find(u => u.id === selectedUser.id) ? [selectedUser] : []),
+                  ...users
+                ].map(u => ({ value: u.id, label: `${u.first_name} ${u.last_name}` }))}
                 value={formData.representative_id}
-                onChange={(value) => setFormData(prev => ({ ...prev, representative_id: value }))}
+                onChange={(value) => {
+                    setFormData(prev => ({ ...prev, representative_id: value }));
+                    const user = users.find(u => u.id === value) || (selectedUser?.id === value ? selectedUser : null);
+                    if (user) setSelectedUser(user);
+                }}
                 placeholder="Seçiniz..."
                 searchPlaceholder="Temsilci Ara..."
                 emptyText="Temsilci bulunamadı."
+                loading={loadingUsers}
+                onSearch={handleUserSearch}
               />
             </div>
             

@@ -5,7 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { savePersonAction } from "@/app/actions/save-person";
-import { getCompaniesAction, getRepresentativesAction, getCompanyAction } from "@/app/actions/fetch-data";
+import { getCompaniesAction, getRepresentativesAction, getCompanyAction, getUserAction } from "@/app/actions/fetch-data";
 import { toast } from "sonner";
 import { Loader2, User, Phone, Mail, MapPin, FileText, Building2, History } from "lucide-react";
 import { PastJobsModal } from "@/components/shared/past-jobs-modal";
@@ -25,6 +25,8 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
   const [loadingCompanies, setLoadingCompanies] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
   const [formData, setFormData] = useState({
     company_id: "",
     first_name: "",
@@ -59,13 +61,24 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
     setLoadingCompanies(false);
   }, []);
 
+  // Debounced search for users
+  const handleUserSearch = useCallback(async (search: string) => {
+    setLoadingUsers(true);
+    const result = await getRepresentativesAction(1, 20, search);
+    if (result.success) {
+      setUsers(result.data || []);
+    }
+    setLoadingUsers(false);
+  }, []);
+
   useEffect(() => {
     // Fetch initial companies and users
     const fetchData = async () => {
       setLoadingCompanies(true);
+      setLoadingUsers(true);
       const [companiesResult, usersResult] = await Promise.all([
-        getCompaniesAction(1, 20), // Only fetch first 20 initially
-        getRepresentativesAction()
+        getCompaniesAction(1, 20),
+        getRepresentativesAction(1, 20)
       ]);
 
       let loadedCompanies: any[] = [];
@@ -94,9 +107,31 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
       setCompanies(loadedCompanies);
       setLoadingCompanies(false);
 
+      let loadedUsers: any[] = [];
       if (usersResult.success) {
-        setUsers(usersResult.data || []);
+        loadedUsers = usersResult.data || [];
       }
+
+      // If we are editing a person and their representative is not in the list, fetch it
+      if (person?.representative_id) {
+        const userExists = loadedUsers.find((u: any) => u.id === person.representative_id);
+        if (!userExists) {
+          const userResult = await getUserAction(person.representative_id);
+          if (userResult.success && userResult.data) {
+            loadedUsers = [...loadedUsers, userResult.data];
+            // Sort users by name
+            loadedUsers.sort((a: any, b: any) => a.first_name.localeCompare(b.first_name));
+            setSelectedUser(userResult.data);
+          }
+        } else {
+          setSelectedUser(userExists);
+        }
+      } else {
+        setSelectedUser(null);
+      }
+
+      setUsers(loadedUsers);
+      setLoadingUsers(false);
     };
     if (isOpen) {
       fetchData();
@@ -245,12 +280,21 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
                 Müşteri Temsilcisi
               </label>
               <Combobox
-                options={users.map(u => ({ value: u.id, label: `${u.first_name} ${u.last_name}` }))}
+                options={[
+                  ...(selectedUser && !users.find(u => u.id === selectedUser.id) ? [selectedUser] : []),
+                  ...users
+                ].map(u => ({ value: u.id, label: `${u.first_name} ${u.last_name}` }))}
                 value={formData.representative_id}
-                onChange={(value) => setFormData(prev => ({ ...prev, representative_id: value }))}
+                onChange={(value) => {
+                  setFormData(prev => ({ ...prev, representative_id: value }));
+                  const user = users.find(u => u.id === value) || (selectedUser?.id === value ? selectedUser : null);
+                  if (user) setSelectedUser(user);
+                }}
                 placeholder="Seçiniz..."
                 searchPlaceholder="Temsilci Ara..."
                 emptyText="Temsilci bulunamadı."
+                loading={loadingUsers}
+                onSearch={handleUserSearch}
               />
             </div>
         </div>

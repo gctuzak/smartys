@@ -5,7 +5,7 @@ import { getProposalsAction, deleteProposalAction } from "@/app/actions/fetch-da
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Trash2, Loader2, FileText, Eye } from "lucide-react";
+import { Search, Trash2, Loader2, FileText, Eye, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -26,11 +26,13 @@ export default function ProposalsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [sortField, setSortField] = useState("proposal_no");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   const fetchProposals = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await getProposalsAction(page, 20, search);
+      const result = await getProposalsAction(page, 20, search, sortField, sortOrder);
       if (result.success) {
         setProposals(result.data || []);
         setTotalPages(result.totalPages || 1);
@@ -43,7 +45,7 @@ export default function ProposalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, sortField, sortOrder]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -67,6 +69,20 @@ export default function ProposalsPage() {
   const handleViewDetails = (id: string) => {
     setSelectedProposalId(id);
     setIsDetailModalOpen(true);
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    return sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
   return (
@@ -106,11 +122,27 @@ export default function ProposalsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Teklif No</TableHead>
+                <TableHead onClick={() => handleSort("proposal_no")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    Teklif No <SortIcon field="proposal_no" />
+                  </div>
+                </TableHead>
                 <TableHead>Müşteri</TableHead>
-                <TableHead>Tarih</TableHead>
-                <TableHead>Tutar</TableHead>
-                <TableHead>Durum</TableHead>
+                <TableHead onClick={() => handleSort("proposal_date")} className="cursor-pointer hover:bg-gray-100">
+                   <div className="flex items-center">
+                    Tarih <SortIcon field="proposal_date" />
+                  </div>
+                </TableHead>
+                <TableHead onClick={() => handleSort("total_amount")} className="cursor-pointer hover:bg-gray-100">
+                   <div className="flex items-center">
+                    Tutar <SortIcon field="total_amount" />
+                  </div>
+                </TableHead>
+                <TableHead onClick={() => handleSort("status")} className="cursor-pointer hover:bg-gray-100">
+                   <div className="flex items-center">
+                    Durum <SortIcon field="status" />
+                  </div>
+                </TableHead>
                 <TableHead className="text-right">İşlemler</TableHead>
               </TableRow>
             </TableHeader>

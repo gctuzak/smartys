@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getUsersAction, deleteUserAction } from "@/app/actions/fetch-data";
+import { checkUserDependenciesAction } from "@/app/actions/user-operations";
 import { UserModal } from "@/components/users/user-modal";
+import { TransferUserModal } from "@/components/users/transfer-user-modal";
 import { toast } from "sonner";
 
 export default function UsersPage() {
@@ -16,7 +18,10 @@ export default function UsersPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [userToDelete, setUserToDelete] = useState<any>(null);
+  const [dependencyCounts, setDependencyCounts] = useState({ companies: 0, persons: 0, orders: 0 });
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -35,10 +40,20 @@ export default function UsersPage() {
     return () => clearTimeout(timer);
   }, [fetchUsers]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (user: any) => {
+    // Check dependencies first
+    const checkResult = await checkUserDependenciesAction(user.id);
+    
+    if (checkResult.success && checkResult.hasDependencies) {
+      setUserToDelete(user);
+      setDependencyCounts(checkResult.counts);
+      setIsTransferModalOpen(true);
+      return;
+    }
+
     if (!confirm("Bu kullanıcıyı silmek istediğinize emin misiniz?")) return;
     
-    const result = await deleteUserAction(id);
+    const result = await deleteUserAction(user.id);
     if (result.success) {
       toast.success("Kullanıcı silindi");
       fetchUsers();
@@ -143,7 +158,7 @@ export default function UsersPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDelete(user.id)}
+                          onClick={() => handleDelete(user)}
                         >
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </Button>
@@ -161,6 +176,14 @@ export default function UsersPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         user={selectedUser}
+        onSuccess={fetchUsers}
+      />
+
+      <TransferUserModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        user={userToDelete}
+        counts={dependencyCounts}
         onSuccess={fetchUsers}
       />
     </div>
