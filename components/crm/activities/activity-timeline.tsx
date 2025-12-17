@@ -39,8 +39,12 @@ import { TaskCreationDialog } from "./task-creation-dialog";
 
 interface ActivityTimelineProps {
   contactId?: string;
+  contactName?: string;
   companyId?: string;
+  companyName?: string;
   proposalId?: string;
+  proposalTitle?: string;
+  representativeId?: string;
 }
 
 type GroupedActivities = {
@@ -49,8 +53,12 @@ type GroupedActivities = {
 
 export function ActivityTimeline({
   contactId,
+  contactName,
   companyId,
+  companyName,
   proposalId,
+  proposalTitle,
+  representativeId,
 }: ActivityTimelineProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -174,7 +182,18 @@ export function ActivityTimeline({
     <div className="w-full space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Aktiviteler & Görevler</h3>
-        <TaskCreationDialog onSuccess={fetchActivities} />
+        <TaskCreationDialog 
+          onSuccess={fetchActivities} 
+          initialData={{
+            companyId,
+            companyName,
+            contactId,
+            contactName,
+            proposalId,
+            proposalTitle,
+            assignedTo: representativeId
+          }}
+        />
       </div>
 
       {loading ? (

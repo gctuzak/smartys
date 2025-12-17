@@ -545,7 +545,17 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
                         <ListTodo className="w-4 h-4 text-gray-500" />
                         <h3 className="text-base font-semibold">Aktiviteler ve Görevler</h3>
                     </div>
-                    {proposalId && <ActivityTimeline proposalId={proposalId} />}
+                    {proposalId && (
+                      <ActivityTimeline 
+                         proposalId={proposalId} 
+                         proposalTitle={`Teklif #${data.proposal_no}`}
+                         companyId={data.company?.id}
+                         companyName={data.company?.name}
+                         contactId={data.person?.id}
+                         contactName={data.person ? `${data.person.first_name} ${data.person.last_name}` : undefined}
+                         representativeId={data.representative_id}
+                       />
+                    )}
                  </div>
              </div>
 

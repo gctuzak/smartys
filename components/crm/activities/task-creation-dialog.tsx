@@ -38,6 +38,15 @@ interface TaskCreationDialogProps {
   onOpenChange?: (open: boolean) => void;
   onSuccess?: () => void;
   activityToEdit?: Activity;
+  initialData?: {
+    companyId?: string | null;
+    companyName?: string | null;
+    contactId?: string | null;
+    contactName?: string | null;
+    proposalId?: string | null;
+    proposalTitle?: string | null;
+    assignedTo?: string | null;
+  };
 }
 
 export function TaskCreationDialog({
@@ -47,6 +56,7 @@ export function TaskCreationDialog({
   onOpenChange: controlledOnOpenChange,
   onSuccess,
   activityToEdit,
+  initialData,
 }: TaskCreationDialogProps) {
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   
@@ -84,10 +94,10 @@ export function TaskCreationDialog({
       description: activityToEdit?.description || "",
       priority: activityToEdit?.priority || "MEDIUM",
       dueDate: formatDateForInput(activityToEdit?.dueDate),
-      assignedTo: activityToEdit?.assignedTo,
-      contactId: activityToEdit?.contactId,
-      companyId: activityToEdit?.companyId,
-      proposalId: activityToEdit?.proposalId,
+      assignedTo: activityToEdit?.assignedTo || initialData?.assignedTo || undefined,
+      contactId: activityToEdit?.contactId || initialData?.contactId || undefined,
+      companyId: activityToEdit?.companyId || initialData?.companyId || undefined,
+      proposalId: activityToEdit?.proposalId || initialData?.proposalId || undefined,
       isRecurring: activityToEdit?.isRecurring || false,
       status: activityToEdit?.status || "OPEN",
     },
@@ -135,7 +145,39 @@ export function TaskCreationDialog({
     }
   }, [watchedProposalId, options.proposals, setValue, watchedCompanyId, watchedContactId]);
 
-  // Reset form when activityToEdit changes
+  // Pre-populate options from initialData
+  useEffect(() => {
+    if (initialData) {
+      setOptions(prev => {
+        const newOptions = { ...prev };
+        let changed = false;
+
+        if (initialData.companyId && initialData.companyName && !newOptions.companies.some(c => c.value === initialData.companyId)) {
+          newOptions.companies = [...newOptions.companies, { value: initialData.companyId, label: initialData.companyName }];
+          changed = true;
+        }
+
+        if (initialData.contactId && initialData.contactName && !newOptions.persons.some(p => p.value === initialData.contactId)) {
+          newOptions.persons = [...newOptions.persons, { value: initialData.contactId, label: initialData.contactName, companyId: initialData.companyId || undefined }];
+          changed = true;
+        }
+
+        if (initialData.proposalId && initialData.proposalTitle && !newOptions.proposals.some(p => p.value === initialData.proposalId)) {
+          newOptions.proposals = [...newOptions.proposals, { 
+            value: initialData.proposalId, 
+            label: initialData.proposalTitle,
+            companyId: initialData.companyId || undefined,
+            contactId: initialData.contactId || undefined
+          }];
+          changed = true;
+        }
+
+        return changed ? newOptions : prev;
+      });
+    }
+  }, [initialData]);
+
+  // Reset form when activityToEdit or initialData changes
   useEffect(() => {
     if (activityToEdit) {
       reset({
@@ -151,8 +193,22 @@ export function TaskCreationDialog({
         isRecurring: activityToEdit.isRecurring || false,
         status: activityToEdit.status,
       });
+    } else if (initialData && !activityToEdit) {
+       reset({
+        type: "TASK",
+        subject: initialData.proposalTitle ? `${initialData.proposalTitle} ile ilgili görev` : "",
+        description: "",
+        priority: "MEDIUM",
+        dueDate: undefined,
+        assignedTo: initialData.assignedTo || undefined,
+        contactId: initialData.contactId || undefined,
+        companyId: initialData.companyId || undefined,
+        proposalId: initialData.proposalId || undefined,
+        isRecurring: false,
+        status: "OPEN",
+      });
     }
-  }, [activityToEdit, reset]);
+  }, [activityToEdit, initialData, reset]);
 
 
   const isRecurring = watch("isRecurring");
@@ -164,12 +220,35 @@ export function TaskCreationDialog({
       getActivityOptions().then((res) => {
         console.log("Options response:", res);
         if (res.success && res.data) {
-          setOptions(res.data);
+          setOptions(prev => {
+             // Merge fetched options with initialData options to ensure we don't lose the pre-selected ones
+             const newOptions = { ...res.data! };
+             
+             if (initialData) {
+                if (initialData.companyId && initialData.companyName && !newOptions.companies.some(c => c.value === initialData.companyId)) {
+                  newOptions.companies = [...newOptions.companies, { value: initialData.companyId, label: initialData.companyName }];
+                }
+
+                if (initialData.contactId && initialData.contactName && !newOptions.persons.some(p => p.value === initialData.contactId)) {
+                  newOptions.persons = [...newOptions.persons, { value: initialData.contactId, label: initialData.contactName, companyId: initialData.companyId || undefined }];
+                }
+
+                if (initialData.proposalId && initialData.proposalTitle && !newOptions.proposals.some(p => p.value === initialData.proposalId)) {
+                  newOptions.proposals = [...newOptions.proposals, { 
+                    value: initialData.proposalId, 
+                    label: initialData.proposalTitle,
+                    companyId: initialData.companyId || undefined,
+                    contactId: initialData.contactId || undefined
+                  }];
+                }
+             }
+             return newOptions;
+          });
         }
       }).catch(err => console.error("Error calling getActivityOptions:", err))
       .finally(() => setOptionsLoading(false));
     }
-  }, [open]);
+  }, [open, initialData]);
 
   const onSubmit = async (data: FormValues) => {
     setLoading(true);
