@@ -2,16 +2,17 @@
 
 import { useState, useEffect, useRef } from "react";
 import { getProposalDetailsAction } from "@/app/actions/fetch-data";
-import { listDocumentsAction, uploadDocumentAction, deleteDocumentAction } from "@/app/actions/documents";
+import { uploadDocumentAction } from "@/app/actions/documents";
 import { updateProposalStatusAction } from "@/app/actions/update-proposal-status";
 import { generateProposalPDF } from "@/lib/generate-proposal-pdf";
 import { Modal } from "@/components/ui/modal";
-import { Loader2, Building2, User, MapPin, Phone, Mail, Calendar, Hash, Check, FileText, CreditCard, Upload, Download, File as FileIcon, Printer, Trash2, ListTodo } from "lucide-react";
+import { Loader2, Building2, User, MapPin, Phone, Mail, Calendar, Hash, Check, FileText, CreditCard, Printer, ListTodo } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ActivityTimeline } from "@/components/crm/activities/activity-timeline";
+import { FileManager } from "@/components/shared/file-manager";
 
 
 const PROPOSAL_STATUSES = [
@@ -32,33 +33,11 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [fileInputKey, setFileInputKey] = useState(0);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [fileManagerKey, setFileManagerKey] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const handleDeleteDocument = async (id: string) => {
-    if (!confirm("Bu dokümanı silmek istediğinize emin misiniz?")) return;
-    
-    setDeletingId(id);
-    try {
-        const result = await deleteDocumentAction(id);
-        if (result.success) {
-            setDocuments(prev => prev.filter(d => d.id !== id));
-            toast.success("Doküman silindi");
-        } else {
-            toast.error(result.error || "Doküman silinemedi");
-        }
-    } catch (error) {
-        toast.error("Bir hata oluştu");
-    } finally {
-        setDeletingId(null);
-    }
-  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -80,8 +59,6 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
         if (result.success) {
           setData(result.data);
           setSelectedStatus(result.data.status);
-          const docs = await listDocumentsAction({ proposalId });
-          if (docs.success) setDocuments(docs.data || []);
         }
         setLoading(false);
       };
@@ -89,7 +66,6 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
     } else {
       setData(null);
       setSelectedStatus(null);
-      setDocuments([]);
     }
   }, [isOpen, proposalId]);
 
@@ -121,8 +97,7 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
 
       const res = await uploadDocumentAction(formData);
       if (res.success) {
-         const docs = await listDocumentsAction({ proposalId: data.id });
-         if (docs.success) setDocuments(docs.data || []);
+         setFileManagerKey(prev => prev + 1);
          toast.success("PDF indirildi ve sisteme kaydedildi");
       } else {
          toast.success("PDF indirildi ancak sisteme kaydedilemedi");
@@ -153,28 +128,6 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
       toast.error("Bir hata oluştu");
     } finally {
       setUpdatingStatus(false);
-    }
-  };
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !data) return;
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", file.type.includes("pdf") ? "pdf" : "excel");
-      formData.append("proposalId", data.id);
-      if (data.company?.id) formData.append("companyId", data.company.id);
-      if (data.person?.id) formData.append("personId", data.person.id);
-      const res = await uploadDocumentAction(formData);
-      if (res.success) {
-        const docs = await listDocumentsAction({ proposalId: data.id });
-        if (docs.success) setDocuments(docs.data || []);
-        setFileInputKey((k) => k + 1);
-      }
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -477,66 +430,19 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
                  )}
                  
                  {/* Documents Section */}
-                 <div className="border rounded-xl p-5 bg-gray-50/30">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-base font-semibold flex items-center gap-2">
-                            <FileIcon className="w-4 h-4 text-gray-500" />
-                            Dokümanlar
-                        </h3>
-                        <label className="inline-flex items-center justify-center px-3 py-1.5 rounded-md border bg-white text-xs font-medium cursor-pointer hover:bg-gray-50 transition-colors shadow-sm">
-                            <input key={fileInputKey} type="file" className="hidden" onChange={handleUpload} />
-                            {uploading ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Upload className="w-3 h-3 mr-2" />}
-                            <span>{uploading ? "Yükleniyor..." : "Dosya Yükle"}</span>
-                        </label>
+                 <div className="space-y-4 pt-2">
+                    <div className="flex items-center gap-2 text-primary border-b pb-2">
+                        <FileText className="w-5 h-5" />
+                        <h3 className="font-semibold text-lg">Dosyalar</h3>
                     </div>
-                    {documents.length === 0 ? (
-                        <div className="text-sm text-gray-500 italic text-center py-4 border-2 border-dashed rounded-lg">
-                            Bu teklife bağlı doküman bulunmamaktadır.
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {documents.map((doc) => (
-                            <div
-                                key={doc.id}
-                                className="group flex items-center justify-between rounded-lg border bg-white px-3 py-2.5 hover:border-blue-300 hover:shadow-sm transition-all"
-                            >
-                                <a 
-                                    href={doc.public_url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="flex items-center gap-3 overflow-hidden flex-1"
-                                >
-                                    <div className="bg-gray-100 p-1.5 rounded text-gray-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                                        <FileIcon className="w-4 h-4" />
-                                    </div>
-                                    <div className="flex flex-col min-w-0">
-                                        <span className="text-sm font-medium truncate text-gray-900">{doc.original_name}</span>
-                                        <span className="text-xs text-gray-500">{new Date(doc.created_at).toLocaleDateString("tr-TR")}</span>
-                                    </div>
-                                </a>
-                                <div className="flex items-center gap-1 ml-2">
-                                    <a 
-                                        href={doc.public_url} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer" 
-                                        className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-blue-600 transition-colors"
-                                        title="İndir"
-                                    >
-                                        <Download className="w-4 h-4" />
-                                    </a>
-                                    <button 
-                                        onClick={() => handleDeleteDocument(doc.id)} 
-                                        className="p-1.5 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
-                                        title="Sil"
-                                        disabled={deletingId === doc.id}
-                                    >
-                                        {deletingId === doc.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                    </button>
-                                </div>
-                            </div>
-                            ))}
-                        </div>
-                    )}
+                    <FileManager
+                        key={fileManagerKey}
+                        entityType="proposal"
+                        entityId={proposalId}
+                        proposalId={proposalId}
+                        companyId={data.company?.id}
+                        personId={data.person?.id}
+                    />
                  </div>
 
                  {/* Activities Section */}

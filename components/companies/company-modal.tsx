@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Loader2, Building2, Phone, Mail, MapPin, FileText, Users, History } from "lucide-react";
 import { PastJobsModal } from "@/components/shared/past-jobs-modal";
 import { Combobox } from "@/components/ui/combobox";
+import { FileManager } from "@/components/shared/file-manager";
 
 interface CompanyModalProps {
   isOpen: boolean;
@@ -525,6 +526,21 @@ export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyMod
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Section 5: Files */}
+        {company && (
+          <div className="space-y-4 pt-2">
+             <div className="flex items-center gap-2 text-primary border-b pb-2">
+                <FileText className="w-5 h-5" />
+                <h3 className="font-semibold text-lg">Dosyalar</h3>
+             </div>
+             <FileManager
+               entityType="company"
+               entityId={company.id}
+               companyId={company.id}
+             />
           </div>
         )}
 

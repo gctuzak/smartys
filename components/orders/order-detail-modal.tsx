@@ -8,6 +8,7 @@ import { Loader2, FileText, User, Building2, Calendar, Banknote, Briefcase, Exte
 import { toast } from "sonner";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { FileManager } from "@/components/shared/file-manager";
 
 interface OrderDetailModalProps {
   isOpen: boolean;
@@ -177,6 +178,20 @@ export function OrderDetailModal({ isOpen, onClose, orderId }: OrderDetailModalP
                   </div>
               </div>
           )}
+
+          <div className="mt-6 pt-4 border-t">
+            <h3 className="text-sm font-medium text-gray-900 mb-4 flex items-center">
+              <FileText className="h-4 w-4 mr-2" /> Dosyalar
+            </h3>
+            <FileManager
+              entityType="order"
+              entityId={order.id}
+              orderId={order.id}
+              companyId={order.company_id}
+              personId={order.person_id}
+              proposalId={order.proposal_id}
+            />
+          </div>
 
         </div>
       ) : (

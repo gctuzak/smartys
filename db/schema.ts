@@ -102,6 +102,7 @@ export const proposalItems = pgTable("proposal_items", {
 export const documents = pgTable("documents", {
   id: uuid("id").defaultRandom().primaryKey(),
   proposalId: uuid("proposal_id").references(() => proposals.id),
+  orderId: uuid("order_id").references(() => orders.id),
   companyId: uuid("company_id").references(() => companies.id),
   personId: uuid("person_id").references(() => persons.id),
   ownerEmail: text("owner_email"),

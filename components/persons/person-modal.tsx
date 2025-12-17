@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Loader2, User, Phone, Mail, MapPin, FileText, Building2, History } from "lucide-react";
 import { PastJobsModal } from "@/components/shared/past-jobs-modal";
 import { Combobox } from "@/components/ui/combobox";
+import { FileManager } from "@/components/shared/file-manager";
 
 interface PersonModalProps {
   isOpen: boolean;
@@ -555,6 +556,22 @@ export function PersonModal({ isOpen, onClose, person, onSuccess }: PersonModalP
              </div>
            </div>
         </div>
+
+        {/* Section 4: Files */}
+        {person && (
+          <div className="space-y-4 pt-2">
+             <div className="flex items-center gap-2 text-primary border-b pb-2">
+                <FileText className="w-5 h-5" />
+                <h3 className="font-semibold text-lg">Dosyalar</h3>
+             </div>
+             <FileManager
+               entityType="person"
+               entityId={person.id}
+               personId={person.id}
+               companyId={person.company_id}
+             />
+          </div>
+        )}
 
         <div className="flex justify-end gap-3 pt-6 border-t mt-8">
           <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="px-6">
