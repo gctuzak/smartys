@@ -246,7 +246,7 @@ export async function getActivityOptions() {
         persons: personsList.map((p: any) => ({ value: p.id, label: `${p.first_name} ${p.last_name}`, companyId: p.company_id })),
         companies: companiesList.map((c: any) => ({ value: c.id, label: c.name })),
         proposals: proposalsList.map((p: any) => ({ value: p.id, label: `Teklif #${p.proposal_no}`, companyId: p.company_id, contactId: p.person_id })),
-        types: typesList.length > 0 ? typesList.map((t: any) => ({ value: t.name, label: t.label })) : [
+        types: typesList.length > 0 ? typesList.map((t: any) => ({ value: t.name.toUpperCase(), label: t.label })) : [
             { value: "TASK", label: "Görev (Task)" },
             { value: "CALL", label: "Arama (Call)" },
             { value: "MEETING", label: "Toplantı (Meeting)" },
@@ -309,7 +309,11 @@ export async function getActivities(filters?: {
       reminders: item.reminders,
       createdAt: new Date(item.created_at),
       // Relations
-      assignedToUser: item.users,
+      assignedToUser: item.users ? {
+        ...item.users,
+        firstName: item.users.first_name,
+        lastName: item.users.last_name,
+      } : null,
       contact: item.persons,
       company: item.companies,
       proposal: item.proposals,

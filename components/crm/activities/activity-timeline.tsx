@@ -116,7 +116,7 @@ export function ActivityTimeline({
   };
 
   const getIcon = (type: string) => {
-    switch (type) {
+    switch (type?.toUpperCase()) {
       case "CALL":
         return <Phone className="h-4 w-4" />;
       case "MEETING":
@@ -126,10 +126,28 @@ export function ActivityTimeline({
       case "NOTE":
         return <FileText className="h-4 w-4" />;
       case "TASK":
+        return <CheckCircle2 className="h-4 w-4" />;
       default:
+        // Handle custom types or fallback
         return <CheckCircle2 className="h-4 w-4" />;
     }
   };
+
+  const getTypeLabel = (type: string) => {
+      if (!type) {
+        console.warn("Activity type is missing", type);
+        return "Belirsiz";
+      }
+      switch (type.trim().toUpperCase()) {
+        case "CALL": return "Arama";
+        case "MEETING": return "Toplantı";
+        case "EMAIL": return "E-posta";
+        case "NOTE": return "Not";
+        case "TASK": return "Görev";
+        default: return type; // Show raw type if not standard, or map from activity_types if available
+      }
+  };
+
 
   const getPriorityColor = (priority: string | null) => {
     switch (priority) {
@@ -237,8 +255,10 @@ export function ActivityTimeline({
                             {activity.subject}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(activity.createdAt), "d MMMM yyyy HH:mm", { locale: tr })}
-                            {activity.assignedToUser && ` • ${activity.assignedToUser.firstName} ${activity.assignedToUser.lastName}`}
+                            <span className="font-semibold text-primary/80">
+                              {getTypeLabel(activity.type)}
+                            </span> • {format(new Date(activity.createdAt), "d MMMM yyyy HH:mm", { locale: tr })}
+                            {activity.assignedToUser && ` • ${activity.assignedToUser.firstName || ''} ${activity.assignedToUser.lastName || ''}`}
                           </span>
                         </div>
                       </div>

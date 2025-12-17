@@ -33,7 +33,8 @@ export function RecentProposals({ proposals }: RecentProposalsProps) {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    const normalizedStatus = status?.toLowerCase() || '';
+    switch (normalizedStatus) {
       case 'approved':
       case 'converted_to_order':
         return { label: 'Onaylandı', className: 'bg-green-100 text-green-800' };
@@ -46,8 +47,9 @@ export function RecentProposals({ proposals }: RecentProposalsProps) {
       case 'needs_revision':
         return { label: 'Revize İsteniyor', className: 'bg-orange-100 text-orange-800' };
       case 'pending':
-      default:
         return { label: 'Beklemede', className: 'bg-yellow-100 text-yellow-800' };
+      default:
+        return { label: 'Beklemede', className: 'bg-gray-100 text-gray-800' };
     }
   };
 

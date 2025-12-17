@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -85,11 +85,12 @@ export function TaskCreationDialog({
     setValue,
     watch,
     reset,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      type: activityToEdit?.type || "TASK",
+      type: activityToEdit?.type?.toUpperCase() || "TASK",
       subject: activityToEdit?.subject || "",
       description: activityToEdit?.description || "",
       priority: activityToEdit?.priority || "MEDIUM",
@@ -180,8 +181,9 @@ export function TaskCreationDialog({
   // Reset form when activityToEdit or initialData changes
   useEffect(() => {
     if (activityToEdit) {
+      const type = activityToEdit.type?.trim().toUpperCase() || "TASK";
       reset({
-        type: activityToEdit.type,
+        type,
         subject: activityToEdit.subject,
         description: activityToEdit.description || "",
         priority: activityToEdit.priority,
@@ -215,14 +217,20 @@ export function TaskCreationDialog({
 
   useEffect(() => {
     if (open) {
-      console.log("Dialog opened, fetching options...");
       setOptionsLoading(true);
       getActivityOptions().then((res) => {
-        console.log("Options response:", res);
         if (res.success && res.data) {
           setOptions(prev => {
              // Merge fetched options with initialData options to ensure we don't lose the pre-selected ones
              const newOptions = { ...res.data! };
+             
+             // Ensure types are standardized
+             if (newOptions.types) {
+                newOptions.types = newOptions.types.map(t => ({
+                    ...t,
+                    value: t.value.trim().toUpperCase()
+                }));
+             }
              
              if (initialData) {
                 if (initialData.companyId && initialData.companyName && !newOptions.companies.some(c => c.value === initialData.companyId)) {
@@ -297,26 +305,34 @@ export function TaskCreationDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Aktivite Türü</label>
-              <select
-                {...register("type")}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {options.types && options.types.length > 0 ? (
-                  options.types.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))
-                ) : (
-                  <>
-                    <option value="TASK">Görev (Task)</option>
-                    <option value="CALL">Arama (Call)</option>
-                    <option value="MEETING">Toplantı (Meeting)</option>
-                    <option value="EMAIL">E-posta (Email)</option>
-                    <option value="NOTE">Not (Note)</option>
-                  </>
+              <Controller
+                control={control}
+                name="type"
+                render={({ field }) => (
+                  <select
+                    {...field}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={field.value || "TASK"}
+                    onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                  >
+                    {options.types && options.types.length > 0 ? (
+                      options.types.map((t) => (
+                        <option key={t.value} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="TASK">Görev (Task)</option>
+                        <option value="CALL">Arama (Call)</option>
+                        <option value="MEETING">Toplantı (Meeting)</option>
+                        <option value="EMAIL">E-posta (Email)</option>
+                        <option value="NOTE">Not (Note)</option>
+                      </>
+                    )}
+                  </select>
                 )}
-              </select>
+              />
               {errors.type && (
                 <p className="text-xs text-red-500">{errors.type.message}</p>
               )}
