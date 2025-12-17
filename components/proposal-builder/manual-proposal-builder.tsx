@@ -66,16 +66,28 @@ export function ManualProposalBuilder({ onComplete, onCancel }: ManualProposalBu
     try {
       const term = toTurkishLikePattern(query);
       
-      // Search Companies ONLY
+      // Search Companies AND Persons
       const { data: companies } = await supabase
         .from('companies')
         .select('*')
         .ilike('name', `%${term}%`)
         .limit(20);
 
+      const { data: persons } = await supabase
+        .from('persons')
+        .select(`
+          *,
+          companies (
+            id,
+            name
+          )
+        `)
+        .or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%`)
+        .limit(20);
+
       setSearchResults({ 
         companies: companies || [], 
-        persons: [] // No person search in step 1
+        persons: persons || [] 
       });
     } catch (error) {
       console.error(error);
@@ -107,7 +119,19 @@ export function ManualProposalBuilder({ onComplete, onCancel }: ManualProposalBu
       await fetchCompanyPersons(data.id);
     } else {
       setSelectedPerson(data);
-      // Company is already selected
+      // If person has a company, select it too
+      if (data.companies) {
+        setSelectedCompany(data.companies);
+        // Fetch other persons for this company as well, so dropdown is populated
+        await fetchCompanyPersons(data.companies.id);
+      } else if (data.company_id) {
+         // Fetch company details if not included
+         const { data: company } = await supabase.from('companies').select('*').eq('id', data.company_id).single();
+         if (company) {
+             setSelectedCompany(company);
+             await fetchCompanyPersons(company.id);
+         }
+      }
     }
     // Clear search
     setSearchQuery("");
@@ -548,6 +572,29 @@ export function ManualProposalBuilder({ onComplete, onCancel }: ManualProposalBu
                             <Plus className="mr-2 h-4 w-4" /> Excel'den Müşteri Bilgisi Yapıştır
                         </Button>
                     </>
+                )}
+                {searchResults.persons.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase">Kişiler</h3>
+                    {searchResults.persons.map((person) => (
+                      <div 
+                        key={person.id}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                        onClick={() => handleSelectCustomer('person', person)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="bg-purple-100 p-2 rounded-full text-purple-600">
+                            <User className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">{person.first_name} {person.last_name}</div>
+                            <div className="text-xs text-gray-500">{person.companies?.name || "Şirket Yok"} • {person.title || "Ünvan Yok"}</div>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm" className="text-blue-600">Seç</Button>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             )}
