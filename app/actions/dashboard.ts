@@ -100,6 +100,7 @@ export async function getRecentProposals() {
     .from('proposals')
     .select(`
       id,
+      proposal_no,
       created_at,
       total_amount,
       currency,
@@ -113,7 +114,7 @@ export async function getRecentProposals() {
       )
     `)
     .eq('companies.representative_id', session.userId)
-    .order('created_at', { ascending: false })
+    .order('proposal_no', { ascending: false })
     .limit(5);
 
   return data || [];

@@ -32,6 +32,25 @@ export function RecentProposals({ proposals }: RecentProposalsProps) {
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved':
+      case 'converted_to_order':
+        return { label: 'Onaylandı', className: 'bg-green-100 text-green-800' };
+      case 'rejected':
+        return { label: 'Reddedildi', className: 'bg-red-100 text-red-800' };
+      case 'draft':
+        return { label: 'Taslak', className: 'bg-gray-100 text-gray-800' };
+      case 'sent':
+        return { label: 'Gönderildi', className: 'bg-blue-100 text-blue-800' };
+      case 'needs_revision':
+        return { label: 'Revize İsteniyor', className: 'bg-orange-100 text-orange-800' };
+      case 'pending':
+      default:
+        return { label: 'Beklemede', className: 'bg-yellow-100 text-yellow-800' };
+    }
+  };
+
   return (
     <>
       <Card className="col-span-1">
@@ -56,38 +75,36 @@ export function RecentProposals({ proposals }: RecentProposalsProps) {
                   </TableCell>
                 </TableRow>
               ) : (
-                proposals.map((proposal) => (
-                  <TableRow 
-                    key={proposal.id} 
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleProposalClick(proposal.id)}
-                  >
-                    <TableCell className="font-medium">
-                      <span 
-                        className="hover:underline hover:text-blue-600"
-                        onClick={(e) => handleCompanyClick(e, proposal.companies)}
-                      >
-                        {proposal.companies?.name || "Bilinmiyor"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {formatCurrency(proposal.total_amount, proposal.currency)}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold
-                        ${proposal.status === 'approved' ? 'bg-green-100 text-green-800' : 
-                          proposal.status === 'rejected' ? 'bg-red-100 text-red-800' : 
-                          'bg-yellow-100 text-yellow-800'}`}>
-                        {proposal.status === 'pending' ? 'Beklemede' : 
-                         proposal.status === 'approved' ? 'Onaylandı' : 
-                         proposal.status === 'rejected' ? 'Reddedildi' : proposal.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {format(new Date(proposal.created_at), "d MMM", { locale: tr })}
-                    </TableCell>
-                  </TableRow>
-                ))
+                proposals.map((proposal) => {
+                  const statusBadge = getStatusBadge(proposal.status);
+                  return (
+                    <TableRow 
+                      key={proposal.id} 
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleProposalClick(proposal.id)}
+                    >
+                      <TableCell className="font-medium">
+                        <span 
+                          className="hover:underline hover:text-blue-600"
+                          onClick={(e) => handleCompanyClick(e, proposal.companies)}
+                        >
+                          {proposal.companies?.name || "Bilinmiyor"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {formatCurrency(proposal.total_amount, proposal.currency)}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusBadge.className}`}>
+                          {statusBadge.label}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {format(new Date(proposal.created_at), "d MMM", { locale: tr })}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
