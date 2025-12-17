@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Loader2, User, Trash2, Edit, Plus, UserPlus } from "lucide-react";
+import { Search, Loader2, User, Trash2, Edit, Plus, UserPlus, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -22,16 +22,18 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [dependencyCounts, setDependencyCounts] = useState({ companies: 0, persons: 0, orders: 0 });
+  const [sortField, setSortField] = useState("created_at");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
-    const result = await getUsersAction(page, 20, search);
+    const result = await getUsersAction(page, 20, search, sortField, sortOrder);
     if (result.success) {
       setUsers(result.data || []);
       setTotalPages(result.totalPages || 1);
     }
     setLoading(false);
-  }, [page, search]);
+  }, [page, search, sortField, sortOrder]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -72,6 +74,20 @@ export default function UsersPage() {
     setIsModalOpen(true);
   };
 
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    return sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -108,11 +124,31 @@ export default function UsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Ad Soyad</TableHead>
-                <TableHead>E-posta</TableHead>
-                <TableHead>Telefon</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Kayıt Tarihi</TableHead>
+                <TableHead onClick={() => handleSort("first_name")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    Ad Soyad <SortIcon field="first_name" />
+                  </div>
+                </TableHead>
+                <TableHead onClick={() => handleSort("email")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    E-posta <SortIcon field="email" />
+                  </div>
+                </TableHead>
+                <TableHead onClick={() => handleSort("phone")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    Telefon <SortIcon field="phone" />
+                  </div>
+                </TableHead>
+                <TableHead onClick={() => handleSort("role")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    Rol <SortIcon field="role" />
+                  </div>
+                </TableHead>
+                <TableHead onClick={() => handleSort("created_at")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    Kayıt Tarihi <SortIcon field="created_at" />
+                  </div>
+                </TableHead>
                 <TableHead className="w-[100px]">İşlemler</TableHead>
               </TableRow>
             </TableHeader>

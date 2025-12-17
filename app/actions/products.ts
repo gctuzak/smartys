@@ -22,7 +22,7 @@ const productSchema = z.object({
 
 export type Product = z.infer<typeof productSchema>;
 
-export async function getProductsAction(page = 1, pageSize = 20, search = "") {
+export async function getProductsAction(page = 1, pageSize = 20, search = "", sortField = "created_at", sortOrder = "desc") {
   try {
     let query = supabase
       .from("products")
@@ -37,8 +37,13 @@ export async function getProductsAction(page = 1, pageSize = 20, search = "") {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
+    // Map frontend fields to DB columns
+    let dbSortField = sortField;
+    if (sortField === "defaultPrice") dbSortField = "default_price";
+    if (sortField === "vatRate") dbSortField = "vat_rate";
+
     const { data, count, error } = await query
-      .order("created_at", { ascending: false })
+      .order(dbSortField, { ascending: sortOrder === "asc" })
       .range(from, to);
 
     if (error) throw error;

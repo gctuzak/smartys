@@ -114,14 +114,14 @@ export async function getProposalsAction(page = 1, pageSize = 20, search = "", s
   }
 }
 
-export async function getCompaniesAction(page = 1, pageSize = 20, search = "") {
+export async function getCompaniesAction(page = 1, pageSize = 20, search = "", sortField = "created_at", sortOrder = "desc") {
   try {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
     let query = supabase
       .from("companies")
-      .select("*", { count: "exact" });
+      .select("*, representative:users(first_name, last_name)", { count: "exact" });
 
     if (search) {
       const sLower = search.toLocaleLowerCase('tr-TR');
@@ -129,9 +129,18 @@ export async function getCompaniesAction(page = 1, pageSize = 20, search = "") {
       query = query.or(`name.ilike.%${search}%,name.ilike.%${sLower}%,name.ilike.%${sUpper}%`);
     }
 
+    // Apply sorting
+    const isAsc = sortOrder === "asc";
+    
+    if (sortField) {
+        query = query.order(sortField, { ascending: isAsc });
+    } else {
+        query = query
+            .order("created_at", { ascending: false })
+            .order("name", { ascending: true });
+    }
+
     const { data, count, error } = await query
-      .order("created_at", { ascending: false })
-      .order("name", { ascending: true })
       .range(from, to);
 
     if (error) throw error;
@@ -165,7 +174,7 @@ export async function getCompanyAction(id: string) {
   }
 }
 
-export async function getPersonsAction(companyId?: string, page = 1, pageSize = 20, search = "") {
+export async function getPersonsAction(companyId?: string, page = 1, pageSize = 20, search = "", sortField = "first_name", sortOrder = "asc") {
   try {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -174,7 +183,8 @@ export async function getPersonsAction(companyId?: string, page = 1, pageSize = 
       .from("persons")
       .select(`
         *,
-        company:companies (name)
+        company:companies (name),
+        representative:users (first_name, last_name)
       `, { count: "exact" });
 
     if (companyId) {
@@ -187,9 +197,18 @@ export async function getPersonsAction(companyId?: string, page = 1, pageSize = 
       query = query.or(`first_name.ilike.%${search}%,first_name.ilike.%${sLower}%,first_name.ilike.%${sUpper}%,last_name.ilike.%${search}%,last_name.ilike.%${sLower}%,last_name.ilike.%${sUpper}%`);
     }
 
+    // Apply sorting
+    const isAsc = sortOrder === "asc";
+    
+    if (sortField) {
+        query = query.order(sortField, { ascending: isAsc });
+    } else {
+        query = query
+            .order("created_at", { ascending: false })
+            .order("first_name", { ascending: true });
+    }
+
     const { data, count, error } = await query
-      .order("created_at", { ascending: false })
-      .order("first_name", { ascending: true })
       .range(from, to);
 
     if (error) throw error;
@@ -351,7 +370,7 @@ export async function deleteProposalAction(id: string) {
     }
 }
 
-export async function getUsersAction(page = 1, pageSize = 20, search = "") {
+export async function getUsersAction(page = 1, pageSize = 20, search = "", sortField = "created_at", sortOrder = "desc") {
   try {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -366,9 +385,18 @@ export async function getUsersAction(page = 1, pageSize = 20, search = "") {
       query = query.or(`first_name.ilike.%${search}%,first_name.ilike.%${sLower}%,first_name.ilike.%${sUpper}%,last_name.ilike.%${search}%,last_name.ilike.%${sLower}%,last_name.ilike.%${sUpper}%,email.ilike.%${search}%`);
     }
 
+    // Apply sorting
+    const isAsc = sortOrder === "asc";
+    
+    if (sortField) {
+        query = query.order(sortField, { ascending: isAsc });
+    } else {
+        query = query
+          .order("created_at", { ascending: false })
+          .order("first_name", { ascending: true });
+    }
+
     const { data, count, error } = await query
-      .order("created_at", { ascending: false })
-      .order("first_name", { ascending: true })
       .range(from, to);
 
     if (error) throw error;
@@ -505,7 +533,7 @@ export async function deletePersonAction(id: string) {
     }
 }
 
-export async function getOrdersAction(page = 1, pageSize = 20, search = "") {
+export async function getOrdersAction(page = 1, pageSize = 20, search = "", sortField = "order_no", sortOrder = "desc") {
   try {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -525,8 +553,23 @@ export async function getOrdersAction(page = 1, pageSize = 20, search = "") {
       query = query.or(`order_no.ilike.%${search}%,status.ilike.%${sLower}%,status.ilike.%${sUpper}%`);
     }
 
+    // Apply sorting
+    const isAsc = sortOrder === "asc";
+    
+    if (sortField === "order_no") {
+      // Use created_at for order_no sorting to handle string comparison ("999" > "1000")
+      // assuming orders are created sequentially
+      query = query.order("created_at", { ascending: isAsc });
+    } else if (sortField) {
+        query = query.order(sortField, { ascending: isAsc });
+    } else {
+        query = query.order("created_at", { ascending: false });
+    }
+    
+    // Always secondary sort by ID
+    query = query.order("id", { ascending: false });
+
     const { data, count, error } = await query
-      .order("order_no", { ascending: false })
       .range(from, to);
 
     if (error) throw error;

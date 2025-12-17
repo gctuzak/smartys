@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Loader2, Building2, Trash2, Edit, Plus } from "lucide-react";
+import { Search, Loader2, Building2, Trash2, Edit, Plus, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,11 +17,13 @@ export default function CompaniesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
+  const [sortField, setSortField] = useState("created_at");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   const fetchCompanies = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await getCompaniesAction(page, 20, search);
+      const result = await getCompaniesAction(page, 20, search, sortField, sortOrder);
       if (result.success) {
         setCompanies(result.data || []);
         setTotalPages(result.totalPages || 1);
@@ -34,7 +36,7 @@ export default function CompaniesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, sortField, sortOrder]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -63,6 +65,20 @@ export default function CompaniesPage() {
   const handleCreate = () => {
     setSelectedCompany(null);
     setIsModalOpen(true);
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    return sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
   return (
@@ -101,10 +117,26 @@ export default function CompaniesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Kod</TableHead>
-                <TableHead>Şirket Adı</TableHead>
-                <TableHead>Tür</TableHead>
-                <TableHead>İl/İlçe</TableHead>
+                <TableHead onClick={() => handleSort("code")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    Kod <SortIcon field="code" />
+                  </div>
+                </TableHead>
+                <TableHead onClick={() => handleSort("name")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    Şirket Adı <SortIcon field="name" />
+                  </div>
+                </TableHead>
+                <TableHead onClick={() => handleSort("type")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    Tür <SortIcon field="type" />
+                  </div>
+                </TableHead>
+                <TableHead onClick={() => handleSort("city")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    İl/İlçe <SortIcon field="city" />
+                  </div>
+                </TableHead>
                 <TableHead>Temsilci</TableHead>
                 <TableHead>Telefon</TableHead>
                 <TableHead>E-posta</TableHead>

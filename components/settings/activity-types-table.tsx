@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { 
@@ -25,7 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 interface ActivityType {
   id: string;
@@ -43,6 +43,8 @@ export function ActivityTypesTable({ initialTypes }: ActivityTypesTableProps) {
   const [types, setTypes] = useState(initialTypes);
   const [isOpen, setIsOpen] = useState(false);
   const [editingType, setEditingType] = useState<ActivityType | null>(null);
+  const [sortField, setSortField] = useState<keyof ActivityType>("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const {
     register,
@@ -58,6 +60,34 @@ export function ActivityTypesTable({ initialTypes }: ActivityTypesTableProps) {
       isActive: true,
     },
   });
+
+  const sortedTypes = useMemo(() => {
+    return [...types].sort((a, b) => {
+      const aValue = a[sortField];
+      const bValue = b[sortField];
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortOrder === 'asc' 
+          ? aValue.localeCompare(bValue) 
+          : bValue.localeCompare(aValue);
+      }
+      return 0;
+    });
+  }, [types, sortField, sortOrder]);
+
+  const handleSort = (field: keyof ActivityType) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const SortIcon = ({ field }: { field: keyof ActivityType }) => {
+    if (sortField !== field) return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    return sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
+  };
 
   const onSubmit = async (data: CreateActivityTypeInput) => {
     try {
@@ -165,14 +195,26 @@ export function ActivityTypesTable({ initialTypes }: ActivityTypesTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Kod</TableHead>
-              <TableHead>İsim</TableHead>
-              <TableHead>Renk</TableHead>
+              <TableHead onClick={() => handleSort("name")} className="cursor-pointer hover:bg-gray-100">
+                <div className="flex items-center">
+                  Kod <SortIcon field="name" />
+                </div>
+              </TableHead>
+              <TableHead onClick={() => handleSort("label")} className="cursor-pointer hover:bg-gray-100">
+                <div className="flex items-center">
+                  İsim <SortIcon field="label" />
+                </div>
+              </TableHead>
+              <TableHead onClick={() => handleSort("color")} className="cursor-pointer hover:bg-gray-100">
+                <div className="flex items-center">
+                  Renk <SortIcon field="color" />
+                </div>
+              </TableHead>
               <TableHead className="w-[100px]">İşlemler</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {types.map((type) => (
+            {sortedTypes.map((type) => (
               <TableRow key={type.id}>
                 <TableCell className="font-medium">{type.name}</TableCell>
                 <TableCell>{type.label}</TableCell>

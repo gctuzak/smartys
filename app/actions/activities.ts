@@ -266,6 +266,8 @@ export async function getActivities(filters?: {
   contactId?: string;
   companyId?: string;
   proposalId?: string;
+  sortField?: string;
+  sortOrder?: string;
 }) {
   try {
     console.log("Fetching activities via Supabase API...");
@@ -278,8 +280,14 @@ export async function getActivities(filters?: {
         persons(*),
         companies(*),
         proposals(*)
-      `)
-      .order('created_at', { ascending: false });
+      `);
+
+    // Apply sorting
+    if (filters?.sortField) {
+        query = query.order(filters.sortField, { ascending: filters.sortOrder === 'asc' });
+    } else {
+        query = query.order('created_at', { ascending: false });
+    }
 
     if (filters) {
       if (filters.contactId) query = query.eq('contact_id', filters.contactId);

@@ -7,7 +7,7 @@ import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Pencil, Trash2, Loader2, Package } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Loader2, Package, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -19,11 +19,13 @@ export default function ProductsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
+  const [sortField, setSortField] = useState("created_at");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await getProductsAction(page, 20, search);
+      const result = await getProductsAction(page, 20, search, sortField, sortOrder);
       if (result.success) {
         setProducts(result.data || []);
         setTotalPages(result.totalPages || 1);
@@ -36,7 +38,7 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, sortField, sortOrder]);
 
   useEffect(() => {
     // Debounce search
@@ -71,6 +73,20 @@ export default function ProductsPage() {
   const handleSuccess = () => {
     setIsModalOpen(false);
     fetchProducts();
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    return sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
   return (
@@ -108,12 +124,36 @@ export default function ProductsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Kod</TableHead>
-                  <TableHead>Ürün Adı</TableHead>
-                  <TableHead>Birim</TableHead>
-                  <TableHead>Maliyet</TableHead>
-                  <TableHead>Fiyat</TableHead>
-                  <TableHead>KDV</TableHead>
+                  <TableHead onClick={() => handleSort("code")} className="cursor-pointer hover:bg-gray-100">
+                    <div className="flex items-center">
+                      Kod <SortIcon field="code" />
+                    </div>
+                  </TableHead>
+                  <TableHead onClick={() => handleSort("name")} className="cursor-pointer hover:bg-gray-100">
+                    <div className="flex items-center">
+                      Ürün Adı <SortIcon field="name" />
+                    </div>
+                  </TableHead>
+                  <TableHead onClick={() => handleSort("unit")} className="cursor-pointer hover:bg-gray-100">
+                    <div className="flex items-center">
+                      Birim <SortIcon field="unit" />
+                    </div>
+                  </TableHead>
+                  <TableHead onClick={() => handleSort("cost")} className="cursor-pointer hover:bg-gray-100">
+                    <div className="flex items-center">
+                      Maliyet <SortIcon field="cost" />
+                    </div>
+                  </TableHead>
+                  <TableHead onClick={() => handleSort("defaultPrice")} className="cursor-pointer hover:bg-gray-100">
+                    <div className="flex items-center">
+                      Fiyat <SortIcon field="defaultPrice" />
+                    </div>
+                  </TableHead>
+                  <TableHead onClick={() => handleSort("vatRate")} className="cursor-pointer hover:bg-gray-100">
+                    <div className="flex items-center">
+                      KDV <SortIcon field="vatRate" />
+                    </div>
+                  </TableHead>
                   <TableHead className="text-right">İşlemler</TableHead>
                 </TableRow>
               </TableHeader>

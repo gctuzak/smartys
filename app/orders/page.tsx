@@ -5,7 +5,7 @@ import { getOrdersAction, deleteOrderAction } from "@/app/actions/fetch-data";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Trash2, Loader2, Eye } from "lucide-react";
+import { Search, Trash2, Loader2, Eye, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { OrderDetailModal } from "@/components/orders/order-detail-modal";
 
@@ -17,11 +17,13 @@ export default function OrdersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [sortField, setSortField] = useState("order_no");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await getOrdersAction(page, 20, search);
+      const result = await getOrdersAction(page, 20, search, sortField, sortOrder);
       if (result.success) {
         setOrders(result.data || []);
         setTotalPages(result.totalPages || 1);
@@ -34,7 +36,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, sortField, sortOrder]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -59,6 +61,21 @@ export default function OrdersPage() {
     setSelectedOrderId(id);
     setIsDetailModalOpen(true);
   };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    return sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
+  };
+
 
   return (
     <div className="space-y-6">
@@ -92,12 +109,28 @@ export default function OrdersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Sipariş No</TableHead>
+                <TableHead onClick={() => handleSort("order_no")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    Sipariş No <SortIcon field="order_no" />
+                  </div>
+                </TableHead>
                 <TableHead>Müşteri</TableHead>
                 <TableHead>Temsilci</TableHead>
-                <TableHead>Tarih</TableHead>
-                <TableHead>Tutar</TableHead>
-                <TableHead>Durum</TableHead>
+                <TableHead onClick={() => handleSort("order_date")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    Tarih <SortIcon field="order_date" />
+                  </div>
+                </TableHead>
+                <TableHead onClick={() => handleSort("amount")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    Tutar <SortIcon field="amount" />
+                  </div>
+                </TableHead>
+                <TableHead onClick={() => handleSort("status")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    Durum <SortIcon field="status" />
+                  </div>
+                </TableHead>
                 <TableHead className="text-right">İşlemler</TableHead>
               </TableRow>
             </TableHeader>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Loader2, User, Trash2, Edit, Plus, Building2 } from "lucide-react";
+import { Search, Loader2, User, Trash2, Edit, Plus, Building2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,12 +17,14 @@ export default function PersonsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<any>(null);
+  const [sortField, setSortField] = useState("first_name");
+  const [sortOrder, setSortOrder] = useState("asc");
 
   const fetchPersons = useCallback(async () => {
     try {
       setLoading(true);
       // Passing undefined for companyId to fetch all persons
-      const result = await getPersonsAction(undefined, page, 20, search);
+      const result = await getPersonsAction(undefined, page, 20, search, sortField, sortOrder);
       if (result.success) {
         setPersons(result.data || []);
         setTotalPages(result.totalPages || 1);
@@ -35,7 +37,7 @@ export default function PersonsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, sortField, sortOrder]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -64,6 +66,20 @@ export default function PersonsPage() {
   const handleCreate = () => {
     setSelectedPerson(null);
     setIsModalOpen(true);
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    return sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
   return (
@@ -102,10 +118,22 @@ export default function PersonsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Kod</TableHead>
-                <TableHead>Ad Soyad</TableHead>
+                <TableHead onClick={() => handleSort("code")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    Kod <SortIcon field="code" />
+                  </div>
+                </TableHead>
+                <TableHead onClick={() => handleSort("first_name")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    Ad Soyad <SortIcon field="first_name" />
+                  </div>
+                </TableHead>
                 <TableHead>Şirket</TableHead>
-                <TableHead>Ünvan</TableHead>
+                <TableHead onClick={() => handleSort("title")} className="cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center">
+                    Ünvan <SortIcon field="title" />
+                  </div>
+                </TableHead>
                 <TableHead>Telefon</TableHead>
                 <TableHead>E-posta</TableHead>
                 <TableHead>Temsilci</TableHead>

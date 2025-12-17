@@ -38,13 +38,34 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     .eq('companies.representative_id', userId);
 
   // 2. My Orders (Count & Amount)
-  const { data: myOrders } = await supabase
-    .from('orders')
-    .select('amount')
-    .eq('representative_id', userId);
+  let myOrders: { amount: any }[] = [];
+  let myPage = 0;
+  const myPageSize = 1000;
+  let myHasMore = true;
 
-  const myOrdersCount = myOrders?.length || 0;
-  const myOrderAmount = myOrders?.reduce((sum, order) => sum + (Number(order.amount) || 0), 0) || 0;
+  while (myHasMore) {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('amount')
+      .eq('representative_id', userId)
+      .range(myPage * myPageSize, (myPage + 1) * myPageSize - 1);
+
+    if (error) {
+      console.error("Error fetching my orders:", error);
+      break;
+    }
+
+    if (data && data.length > 0) {
+      myOrders = [...myOrders, ...data];
+      if (data.length < myPageSize) myHasMore = false;
+    } else {
+      myHasMore = false;
+    }
+    myPage++;
+  }
+
+  const myOrdersCount = myOrders.length;
+  const myOrderAmount = myOrders.reduce((sum, order) => sum + (Number(order.amount) || 0), 0);
 
   // 3. My Pending Tasks
   const { count: myPendingTasks } = await supabase
@@ -63,12 +84,33 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     .select('id', { count: 'exact', head: true });
 
   // 2. Total Orders
-  const { data: allOrders } = await supabase
-    .from('orders')
-    .select('amount');
+  let allOrders: { amount: any }[] = [];
+  let page = 0;
+  const pageSize = 1000;
+  let hasMore = true;
+
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('amount')
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+
+    if (error) {
+      console.error("Error fetching orders:", error);
+      break;
+    }
+
+    if (data && data.length > 0) {
+      allOrders = [...allOrders, ...data];
+      if (data.length < pageSize) hasMore = false;
+    } else {
+      hasMore = false;
+    }
+    page++;
+  }
     
-  const totalOrders = allOrders?.length || 0;
-  const totalOrderAmount = allOrders?.reduce((sum, order) => sum + (Number(order.amount) || 0), 0) || 0;
+  const totalOrders = allOrders.length;
+  const totalOrderAmount = allOrders.reduce((sum, order) => sum + (Number(order.amount) || 0), 0);
 
   // 3. Active Customers (Companies)
   const { count: activeCustomers } = await supabase
