@@ -60,7 +60,8 @@ export function TaskCreationDialog({
     persons: { value: string; label: string; companyId?: string }[];
     companies: { value: string; label: string }[];
     proposals: { value: string; label: string; companyId?: string; contactId?: string }[];
-  }>({ users: [], persons: [], companies: [], proposals: [] });
+    types: { value: string; label: string }[];
+  }>({ users: [], persons: [], companies: [], proposals: [], types: [] });
 
   const formatDateForInput = (date?: Date | string | null) => {
     if (!date) return undefined;
@@ -221,11 +222,21 @@ export function TaskCreationDialog({
                 {...register("type")}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <option value="TASK">Görev (Task)</option>
-                <option value="CALL">Arama (Call)</option>
-                <option value="MEETING">Toplantı (Meeting)</option>
-                <option value="EMAIL">E-posta (Email)</option>
-                <option value="NOTE">Not (Note)</option>
+                {options.types && options.types.length > 0 ? (
+                  options.types.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="TASK">Görev (Task)</option>
+                    <option value="CALL">Arama (Call)</option>
+                    <option value="MEETING">Toplantı (Meeting)</option>
+                    <option value="EMAIL">E-posta (Email)</option>
+                    <option value="NOTE">Not (Note)</option>
+                  </>
+                )}
               </select>
               {errors.type && (
                 <p className="text-xs text-red-500">{errors.type.message}</p>

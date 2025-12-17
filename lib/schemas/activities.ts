@@ -2,9 +2,7 @@ import { z } from "zod";
 
 // Zod Schemas with Turkish Error Messages
 
-export const activityTypeSchema = z.enum(
-  ["TASK", "CALL", "MEETING", "EMAIL", "NOTE"]
-);
+export const activityTypeSchema = z.string().min(1, "Aktivite türü seçilmelidir.");
 
 export const activityPrioritySchema = z.enum(["LOW", "MEDIUM", "HIGH"]);
 

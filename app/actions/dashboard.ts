@@ -137,7 +137,7 @@ export async function getRecentOrders() {
       )
     `)
     .eq('representative_id', session.userId)
-    .order('created_at', { ascending: false })
+    .order('order_no', { ascending: false })
     .limit(5);
 
   return data || [];

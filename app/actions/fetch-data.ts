@@ -526,7 +526,7 @@ export async function getOrdersAction(page = 1, pageSize = 20, search = "") {
     }
 
     const { data, count, error } = await query
-      .order("created_at", { ascending: false })
+      .order("order_no", { ascending: false })
       .range(from, to);
 
     if (error) throw error;

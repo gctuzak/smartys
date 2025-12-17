@@ -77,10 +77,13 @@ export function Sidebar() {
             <span>Çıkış Yap</span>
           </button>
         </form>
-        <div className="flex items-center gap-x-3 px-2 py-2 text-sm font-semibold leading-6 text-gray-400 opacity-50">
+        <Link
+          href="/settings/activity-types"
+          className="flex items-center gap-x-3 rounded-md px-2 py-2 text-sm font-semibold leading-6 text-gray-400 hover:bg-gray-800 hover:text-white"
+        >
             <Settings className="h-6 w-6 shrink-0" aria-hidden="true" />
-            <span>Ayarlar v1.0</span>
-        </div>
+            <span>Ayarlar</span>
+        </Link>
       </div>
     </div>
   );

@@ -192,11 +192,12 @@ export async function getActivityOptions() {
     // Create a local admin client if service role key is available
     const adminSupabase = createClient(supabaseUrl, supabaseKey);
     
-    const [usersRes, personsRes, companiesRes, proposalsRes] = await Promise.all([
+    const [usersRes, personsRes, companiesRes, proposalsRes, typesRes] = await Promise.all([
       adminSupabase.from('users').select('id, first_name, last_name'),
       adminSupabase.from('persons').select('id, first_name, last_name, company_id').limit(1000),
       adminSupabase.from('companies').select('id, name').limit(1000),
       adminSupabase.from('proposals').select('id, proposal_no, company_id, person_id').limit(1000),
+      adminSupabase.from('activity_types').select('name, label').eq('is_active', true),
     ]);
 
     if (usersRes.error) {
@@ -215,17 +216,23 @@ export async function getActivityOptions() {
       console.error("Error fetching proposals:", proposalsRes.error);
       throw proposalsRes.error;
     }
+    // typesRes.error is optional because table might not exist yet during dev
+    if (typesRes.error) {
+       console.warn("Error fetching activity types (might be missing table):", typesRes.error);
+    }
 
     const usersList = usersRes.data || [];
     const personsList = personsRes.data || [];
     const companiesList = companiesRes.data || [];
     const proposalsList = proposalsRes.data || [];
+    const typesList = typesRes.data || [];
 
     console.log("Activity options fetched via Drizzle:", {
       users: usersList.length,
       persons: personsList.length,
       companies: companiesList.length,
-      proposals: proposalsList.length
+      proposals: proposalsList.length,
+      types: typesList.length
     });
 
     if (usersList.length === 0 && personsList.length === 0 && companiesList.length === 0) {
@@ -239,8 +246,15 @@ export async function getActivityOptions() {
         persons: personsList.map((p: any) => ({ value: p.id, label: `${p.first_name} ${p.last_name}`, companyId: p.company_id })),
         companies: companiesList.map((c: any) => ({ value: c.id, label: c.name })),
         proposals: proposalsList.map((p: any) => ({ value: p.id, label: `Teklif #${p.proposal_no}`, companyId: p.company_id, contactId: p.person_id })),
-        },
-      };
+        types: typesList.length > 0 ? typesList.map((t: any) => ({ value: t.name, label: t.label })) : [
+            { value: "TASK", label: "Görev (Task)" },
+            { value: "CALL", label: "Arama (Call)" },
+            { value: "MEETING", label: "Toplantı (Meeting)" },
+            { value: "EMAIL", label: "E-posta (Email)" },
+            { value: "NOTE", label: "Not (Note)" }
+        ],
+      },
+    };
     } catch (supabaseError) {
       console.error("Error fetching activity options (both Drizzle and Supabase failed):", supabaseError);
       return { success: false, error: "Seçenekler getirilirken bir hata oluştu." };

@@ -143,6 +143,17 @@ export const orders = pgTable("orders", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const activityTypes = pgTable("activity_types", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(), // e.g. "TASK", "CALL" - used in code/logic
+  label: text("label").notNull(), // e.g. "Görev", "Arama" - display name
+  color: text("color").default("#3b82f6"), // Hex color code
+  icon: text("icon"), // Icon name from lucide-react or similar
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const activities = pgTable("activities", {
   id: uuid("id").defaultRandom().primaryKey(),
   type: text("type").notNull(), // TASK, CALL, MEETING, EMAIL, NOTE
