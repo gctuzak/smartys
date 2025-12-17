@@ -43,6 +43,7 @@ export async function createActivity(data: CreateActivityInput) {
       isRecurring,
       recurrenceRule,
       reminders,
+      status,
     } = result.data;
 
     console.log("Creating activity via Supabase API...");
@@ -60,7 +61,7 @@ export async function createActivity(data: CreateActivityInput) {
       is_recurring: isRecurring,
       recurrence_rule: recurrenceRule,
       reminders,
-      status: "OPEN",
+      status: status || "OPEN",
     });
 
     if (error) throw error;
@@ -127,6 +128,7 @@ export async function updateActivity(id: string, data: CreateActivityInput) {
       isRecurring,
       recurrenceRule,
       reminders,
+      status,
     } = result.data;
 
     console.log("Updating activity via Supabase API...");
@@ -144,6 +146,7 @@ export async function updateActivity(id: string, data: CreateActivityInput) {
       is_recurring: isRecurring,
       recurrence_rule: recurrenceRule,
       reminders,
+      status,
     }).eq('id', id);
 
     if (error) throw error;

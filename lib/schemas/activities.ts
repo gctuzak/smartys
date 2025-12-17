@@ -25,6 +25,7 @@ export const createActivitySchema = z.object({
   isRecurring: z.boolean().optional().default(false),
   recurrenceRule: z.any().optional(), // JSONB
   reminders: z.any().optional(), // JSONB
+  status: activityStatusSchema.optional().default("OPEN"),
 });
 
 export const updateActivityStatusSchema = z.object({

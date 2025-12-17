@@ -88,6 +88,7 @@ export function TaskCreationDialog({
       companyId: activityToEdit?.companyId,
       proposalId: activityToEdit?.proposalId,
       isRecurring: activityToEdit?.isRecurring || false,
+      status: activityToEdit?.status || "OPEN",
     },
   });
 
@@ -101,8 +102,12 @@ export function TaskCreationDialog({
   });
 
   const filteredProposals = options.proposals.filter(p => {
-    if (watchedCompanyId && p.companyId && p.companyId !== watchedCompanyId) return false;
-    if (watchedContactId && p.contactId && p.contactId !== watchedContactId) return false;
+    if (watchedCompanyId) {
+      if (p.companyId !== watchedCompanyId) return false;
+    }
+    if (watchedContactId) {
+      if (p.contactId !== watchedContactId) return false;
+    }
     return true;
   });
 
@@ -143,6 +148,7 @@ export function TaskCreationDialog({
         companyId: activityToEdit.companyId,
         proposalId: activityToEdit.proposalId,
         isRecurring: activityToEdit.isRecurring || false,
+        status: activityToEdit.status,
       });
     }
   }, [activityToEdit, reset]);
@@ -226,6 +232,24 @@ export function TaskCreationDialog({
               )}
             </div>
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Durum</label>
+              <select
+                {...register("status")}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="OPEN">Açık</option>
+                <option value="IN_PROGRESS">Devam Ediyor</option>
+                <option value="COMPLETED">Tamamlandı</option>
+                <option value="CANCELED">İptal Edildi</option>
+              </select>
+              {errors.status && (
+                <p className="text-xs text-red-500">{errors.status.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Öncelik</label>
               <select
