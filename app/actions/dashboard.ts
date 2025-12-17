@@ -105,8 +105,7 @@ export async function getRecentProposals() {
       currency,
       status,
       companies!inner (
-        name,
-        representative_id
+        *
       ),
       persons (
         first_name,
@@ -151,14 +150,9 @@ export async function getUpcomingTasks() {
   const { data } = await supabase
     .from('activities')
     .select(`
-      id,
-      subject,
-      due_date,
-      priority,
-      status,
-      type,
+      *,
       companies (
-        name
+        *
       )
     `)
     .eq('assigned_to', session.userId)
