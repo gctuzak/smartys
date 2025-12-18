@@ -26,6 +26,7 @@ import {
   type Activity,
 } from "@/app/actions/activities";
 import { createActivitySchema } from "@/lib/schemas/activities";
+import { parseDate } from "@/lib/utils";
 
 // Extend schema for form usage if needed, or use as is
 const formSchema = createActivitySchema;
@@ -74,8 +75,9 @@ export function TaskCreationDialog({
   }>({ users: [], persons: [], companies: [], proposals: [], types: [] });
 
   const formatDateForInput = (date?: Date | string | null) => {
-    if (!date) return undefined;
-    const d = new Date(date);
+    const d = parseDate(date);
+    if (!d) return undefined;
+
     // Force TRT (UTC+3)
     const trOffset = 3 * 60; // minutes
     const shifted = new Date(d.getTime() + trOffset * 60000);

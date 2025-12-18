@@ -2,6 +2,7 @@
 import { getAuditLogs } from "@/app/actions/get-audit-logs";
 import { formatDistanceToNow, format } from "date-fns";
 import { tr } from "date-fns/locale";
+import { parseDate } from "@/lib/utils";
 import { 
   MessageSquare, 
   Clock, 
@@ -128,7 +129,10 @@ export async function ActivityFeed() {
                   </div>
                   <div className="mt-1 flex items-center text-xs text-gray-400">
                     <Clock className="w-3 h-3 mr-1" />
-                    {formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: tr })}
+                    {(() => {
+                      const d = parseDate(log.created_at);
+                      return d ? formatDistanceToNow(d, { addSuffix: true, locale: tr }) : '-';
+                    })()}
                   </div>
                 </div>
               </div>

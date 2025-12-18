@@ -7,10 +7,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatDate(date: Date | string | null | undefined, formatStr: string = "d MMM yyyy"): string {
-  if (!date) return '-';
+export function parseDate(date: Date | string | null | undefined): Date | null {
+  if (!date) return null;
   
-  const d = new Date(date);
+  if (typeof date === 'string') {
+      // Check if it's an ISO string without timezone (common from Supabase/Postgres)
+      // e.g. 2023-12-18T14:44:00 or 2023-12-18T14:44:00.000
+      if (date.includes('T') && !date.endsWith('Z') && !date.includes('+')) {
+          return new Date(date + 'Z');
+      }
+      return new Date(date);
+  }
+  return new Date(date);
+}
+
+export function formatDate(date: Date | string | null | undefined, formatStr: string = "d MMM yyyy"): string {
+  const d = parseDate(date);
+  if (!d) return '-';
   
   // Turkey is GMT+3 (UTC+3) all year round
   const TR_OFFSET = 3 * 60; // minutes
