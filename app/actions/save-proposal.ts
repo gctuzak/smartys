@@ -2,6 +2,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { ParsedData } from "@/types";
+import { getSession } from "@/lib/auth";
+import { logActivity } from "@/lib/logger";
 
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL!;
@@ -10,6 +12,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function saveProposalAction(data: ParsedData) {
   try {
+    const session = await getSession();
+    const userId = session?.userId;
+
     // Basic validation
     if (!data.company.name && !data.person?.name) {
        throw new Error("Şirket adı veya Kişi adı belirtilmelidir.");
@@ -215,6 +220,16 @@ export async function saveProposalAction(data: ParsedData) {
 
       if (itemsError) throw itemsError;
     }
+
+    await logActivity({
+      action: 'Teklif Oluşturuldu',
+      entityType: 'proposals',
+      entityId: proposalId,
+      entityName: data.proposal.legacyProposalNo || `Teklif`,
+      userId: userId,
+      companyId: companyId || undefined,
+      details: data.proposal
+    });
 
     return { success: true, proposalId, companyId, personId };
 

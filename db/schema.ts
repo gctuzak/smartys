@@ -174,6 +174,18 @@ export const activities = pgTable("activities", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const auditLogs = pgTable("audit_logs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  action: text("action").notNull(), // CREATE, UPDATE, DELETE
+  entityType: text("entity_type").notNull(), // companies, persons, proposals, etc.
+  entityId: uuid("entity_id").notNull(),
+  entityName: text("entity_name"), // Display name of the entity for quick access
+  userId: uuid("user_id").references(() => users.id), // Who performed the action
+  companyId: uuid("company_id").references(() => companies.id), // Link to company context
+  details: jsonb("details"), // Changed fields, old/new values
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // RELATIONS
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -181,6 +193,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   persons: many(persons),
   orders: many(orders),
   activities: many(activities),
+  auditLogs: many(auditLogs),
 }));
 
 export const companiesRelations = relations(companies, ({ many, one }) => ({
@@ -189,6 +202,7 @@ export const companiesRelations = relations(companies, ({ many, one }) => ({
   documents: many(documents),
   orders: many(orders),
   activities: many(activities),
+  auditLogs: many(auditLogs),
   representative: one(users, {
     fields: [companies.representativeId],
     references: [users.id],
@@ -270,5 +284,16 @@ export const activitiesRelations = relations(activities, ({ one }) => ({
   proposal: one(proposals, {
     fields: [activities.proposalId],
     references: [proposals.id],
+  }),
+}));
+
+export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [auditLogs.userId],
+    references: [users.id],
+  }),
+  company: one(companies, {
+    fields: [auditLogs.companyId],
+    references: [companies.id],
   }),
 }));

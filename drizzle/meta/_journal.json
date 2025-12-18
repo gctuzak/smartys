@@ -64,6 +64,13 @@
       "when": 1765890628042,
       "tag": "0008_deep_mongoose",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1766061423867,
+      "tag": "0009_huge_shotgun",
+      "breakpoints": true
     }
   ]
 }

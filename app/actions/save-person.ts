@@ -2,9 +2,14 @@
 
 import { supabase } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
+import { getSession } from "@/lib/auth";
+import { logActivity } from "@/lib/logger";
 
 export async function savePersonAction(data: any) {
   try {
+    const session = await getSession();
+    const userId = session?.userId;
+
     const personData = {
       company_id: data.company_id,
       first_name: data.first_name,
@@ -29,6 +34,9 @@ export async function savePersonAction(data: any) {
       representative_id: data.representative_id || null,
     };
 
+    let entityId = data.id;
+    const fullName = `${data.first_name} ${data.last_name}`;
+
     if (data.id) {
       // Update
       const { error } = await supabase
@@ -37,13 +45,38 @@ export async function savePersonAction(data: any) {
         .eq("id", data.id);
 
       if (error) throw error;
+
+      await logActivity({
+        action: 'Kişi Güncellendi',
+        entityType: 'persons',
+        entityId: data.id,
+        entityName: fullName,
+        userId: userId,
+        companyId: data.company_id,
+        details: personData
+      });
+
     } else {
       // Insert
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from("persons")
-        .insert(personData);
+        .insert(personData)
+        .select()
+        .single();
 
       if (error) throw error;
+      
+      entityId = inserted.id;
+
+      await logActivity({
+        action: 'Yeni Kişi Oluşturuldu',
+        entityType: 'persons',
+        entityId: entityId,
+        entityName: fullName,
+        userId: userId,
+        companyId: data.company_id,
+        details: personData
+      });
     }
 
     revalidatePath("/persons");

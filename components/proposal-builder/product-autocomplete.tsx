@@ -76,25 +76,27 @@ export function ProductAutocomplete({ value, onChange, onSelect, className }: Pr
       </div>
 
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-2xl shadow-gray-200/50 max-h-80 overflow-auto animate-in fade-in zoom-in-95 duration-200 p-1">
           {suggestions.map((product) => (
             <div
               key={product.id}
-              className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+              className="px-4 py-3 hover:bg-blue-50/50 cursor-pointer text-sm rounded-lg transition-colors border-b border-gray-50 last:border-0"
               onClick={() => handleSelect(product)}
             >
-              <div className="font-medium flex items-center gap-2">
-                {product.name}
-                {product.type === 'service' && (
-                  <span className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">Hizmet</span>
+              <div className="flex items-center justify-between mb-1">
+                <div className="font-semibold text-gray-900 flex items-center gap-2">
+                  {product.name}
+                  {product.type === 'service' && (
+                    <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Hizmet</span>
+                  )}
+                </div>
+                {product.defaultPrice && (
+                    <div className="text-sm font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-md">
+                        {product.defaultPrice} {product.unit ? `/${product.unit}` : ''}
+                    </div>
                 )}
               </div>
-              {product.code && <div className="text-xs text-gray-500">Kod: {product.code}</div>}
-              {product.defaultPrice && (
-                 <div className="text-xs text-green-600">
-                    Liste Fiyatı: {product.defaultPrice} {product.unit ? `/${product.unit}` : ''}
-                 </div>
-              )}
+              {product.code && <div className="text-xs text-gray-500 font-mono">#{product.code}</div>}
             </div>
           ))}
         </div>

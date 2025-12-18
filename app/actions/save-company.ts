@@ -2,9 +2,14 @@
 
 import { supabase } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
+import { getSession } from "@/lib/auth";
+import { logActivity } from "@/lib/logger";
 
 export async function saveCompanyAction(data: any) {
   try {
+    const session = await getSession();
+    const userId = session?.userId;
+
     const companyData = {
       name: data.name,
       type: data.type,
@@ -30,6 +35,8 @@ export async function saveCompanyAction(data: any) {
       contact_info: data.contact_info || {},
     };
 
+    let entityId = data.id;
+
     if (data.id) {
       // Update
       const { error } = await supabase
@@ -38,13 +45,38 @@ export async function saveCompanyAction(data: any) {
         .eq("id", data.id);
 
       if (error) throw error;
+      
+      await logActivity({
+        action: 'Şirket Güncellendi',
+        entityType: 'companies',
+        entityId: data.id,
+        entityName: data.name,
+        userId: userId,
+        companyId: data.id,
+        details: companyData
+      });
+
     } else {
       // Insert
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from("companies")
-        .insert(companyData);
+        .insert(companyData)
+        .select()
+        .single();
 
       if (error) throw error;
+      
+      entityId = inserted.id;
+
+      await logActivity({
+        action: 'Yeni Şirket Oluşturuldu',
+        entityType: 'companies',
+        entityId: entityId,
+        entityName: data.name,
+        userId: userId,
+        companyId: entityId,
+        details: companyData
+      });
     }
 
     revalidatePath("/companies");

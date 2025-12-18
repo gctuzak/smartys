@@ -443,205 +443,215 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
   }, []);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Customer Info Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Şirket Bilgileri</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Şirket Adı</label>
-            <Input
-              value={data.company.name || ""}
-              onChange={(e) => handleCompanyChange("name", e.target.value)}
-            />
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Customer Info Section */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-blue-100/50">
+             <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-lg shadow-sm">
+                    <FileSpreadsheet className="w-5 h-5 text-blue-600" />
+                </div>
+                <h3 className="font-bold text-gray-900">Şirket Bilgileri</h3>
+             </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">E-posta</label>
-            <Input
-              value={data.company.contactInfo.email || ""}
-              onChange={(e) =>
-                setData((prev) => ({
-                  ...prev,
-                  company: {
-                    ...prev.company,
-                    contactInfo: { ...prev.company.contactInfo, email: e.target.value },
-                  },
-                }))
-              }
-            />
+          <div className="p-6 space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Şirket Adı</label>
+              <Input
+                className="h-11 bg-gray-50/50 border-gray-200 focus:bg-white transition-all rounded-lg"
+                value={data.company.name || ""}
+                onChange={(e) => handleCompanyChange("name", e.target.value)}
+                placeholder="Şirket Adı Giriniz"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">E-posta</label>
+                <Input
+                    className="h-11 bg-gray-50/50 border-gray-200 focus:bg-white transition-all rounded-lg"
+                    value={data.company.contactInfo.email || ""}
+                    onChange={(e) =>
+                    setData((prev) => ({
+                        ...prev,
+                        company: {
+                        ...prev.company,
+                        contactInfo: { ...prev.company.contactInfo, email: e.target.value },
+                        },
+                    }))
+                    }
+                    placeholder="ornek@sirket.com"
+                />
+                </div>
+                <div className="space-y-2">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Telefon</label>
+                <Input
+                    className="h-11 bg-gray-50/50 border-gray-200 focus:bg-white transition-all rounded-lg"
+                    value={data.company.contactInfo.phone || ""}
+                    onChange={(e) =>
+                    setData((prev) => ({
+                        ...prev,
+                        company: {
+                        ...prev.company,
+                        contactInfo: { ...prev.company.contactInfo, phone: e.target.value },
+                        },
+                    }))
+                    }
+                    placeholder="0555 555 55 55"
+                />
+                </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">İlgili Kişi / Alt Şirket</label>
+                    <Input
+                    className="h-11 bg-gray-50/50 border-gray-200 focus:bg-white transition-all rounded-lg"
+                    value={(data.company.contactInfo as Record<string, unknown>).company as string || ""}
+                    onChange={(e) =>
+                        setData((prev) => ({
+                        ...prev,
+                        company: {
+                            ...prev.company,
+                            contactInfo: { ...prev.company.contactInfo, company: e.target.value },
+                        },
+                        }))
+                    }
+                    placeholder="Alt Şirket / Departman"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Proje</label>
+                    <Input
+                    className="h-11 bg-gray-50/50 border-gray-200 focus:bg-white transition-all rounded-lg"
+                    value={(data.company.contactInfo as Record<string, unknown>).project as string || ""}
+                    onChange={(e) =>
+                        setData((prev) => ({
+                        ...prev,
+                        company: {
+                            ...prev.company,
+                            contactInfo: { ...prev.company.contactInfo, project: e.target.value },
+                        },
+                        }))
+                    }
+                    placeholder="Proje Adı"
+                    />
+                </div>
+            </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">İlgili Kişi / Alt Şirket</label>
-            <Input
-              value={(data.company.contactInfo as Record<string, unknown>).company as string || ""}
-              onChange={(e) =>
-                setData((prev) => ({
-                  ...prev,
-                  company: {
-                    ...prev.company,
-                    contactInfo: { ...prev.company.contactInfo, company: e.target.value },
-                  },
-                }))
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Proje</label>
-            <Input
-              value={(data.company.contactInfo as Record<string, unknown>).project as string || ""}
-              onChange={(e) =>
-                setData((prev) => ({
-                  ...prev,
-                  company: {
-                    ...prev.company,
-                    contactInfo: { ...prev.company.contactInfo, project: e.target.value },
-                  },
-                }))
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Telefon</label>
-            <Input
-              value={data.company.contactInfo.phone || ""}
-              onChange={(e) =>
-                setData((prev) => ({
-                  ...prev,
-                  company: {
-                    ...prev.company,
-                    contactInfo: { ...prev.company.contactInfo, phone: e.target.value },
-                  },
-                }))
-              }
-            />
-          </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Person Info Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Kişi Bilgileri</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Ad Soyad</label>
-            <Input
-              value={data.person?.name || ""}
-              onChange={(e) => handlePersonChange("name", e.target.value)}
-              placeholder="Ad Soyad"
-            />
+        {/* Person Info Section */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b border-emerald-100/50">
+             <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-lg shadow-sm">
+                    <Plus className="w-5 h-5 text-emerald-600" />
+                </div>
+                <h3 className="font-bold text-gray-900">Kişi Bilgileri</h3>
+             </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Unvan</label>
-            <Input
-              value={data.person?.title || ""}
-              onChange={(e) => handlePersonChange("title", e.target.value)}
-              placeholder="Unvan"
-            />
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Ad Soyad</label>
+                    <Input
+                    className="h-11 bg-gray-50/50 border-gray-200 focus:bg-white transition-all rounded-lg"
+                    value={data.person?.name || ""}
+                    onChange={(e) => handlePersonChange("name", e.target.value)}
+                    placeholder="Ad Soyad"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Unvan</label>
+                    <Input
+                    className="h-11 bg-gray-50/50 border-gray-200 focus:bg-white transition-all rounded-lg"
+                    value={data.person?.title || ""}
+                    onChange={(e) => handlePersonChange("title", e.target.value)}
+                    placeholder="Unvan"
+                    />
+                </div>
+            </div>
+            <div className="space-y-2">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">E-posta</label>
+                <Input
+                className="h-11 bg-gray-50/50 border-gray-200 focus:bg-white transition-all rounded-lg"
+                value={data.person?.email || ""}
+                onChange={(e) => handlePersonChange("email", e.target.value)}
+                placeholder="E-posta"
+                />
+            </div>
+            <div className="space-y-2">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Telefon</label>
+                <Input
+                className="h-11 bg-gray-50/50 border-gray-200 focus:bg-white transition-all rounded-lg"
+                value={data.person?.phone || ""}
+                onChange={(e) => handlePersonChange("phone", e.target.value)}
+                placeholder="Telefon"
+                />
+            </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">E-posta</label>
-            <Input
-              value={data.person?.email || ""}
-              onChange={(e) => handlePersonChange("email", e.target.value)}
-              placeholder="E-posta"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Telefon</label>
-            <Input
-              value={data.person?.phone || ""}
-              onChange={(e) => handlePersonChange("phone", e.target.value)}
-              placeholder="Telefon"
-            />
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Proposal Items Section */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Teklif Kalemleri</CardTitle>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-500">Para Birimi:</span>
-                <select
-                  value={data.proposal.currency}
-                  onChange={(e) => setData(prev => ({ ...prev, proposal: { ...prev.proposal, currency: e.target.value } }))}
-                  className="h-8 w-24 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  <option value="EUR">EUR (€)</option>
-                  <option value="TRY">TL (₺)</option>
-                  <option value="USD">USD ($)</option>
-                  <option value="GBP">GBP (£)</option>
-                </select>
-            </div>
-            <div className="text-lg font-bold text-green-600">
-                Toplam: {(() => {
-                  try {
-                    return data.proposal.totalAmount.toLocaleString("tr-TR", { style: "currency", currency: (data.proposal.currency || "EUR").replace('TL', 'TRY') });
-                  } catch {
-                    return `${data.proposal.totalAmount.toLocaleString("tr-TR")} ${data.proposal.currency}`;
-                  }
-                })()}
-            </div>
-            <div className="text-lg font-bold text-gray-600">
-                KDV (%{data.proposal.vatRate ?? 20}): {(() => {
-                  try {
-                    return (data.proposal.vatAmount ?? 0).toLocaleString("tr-TR", { style: "currency", currency: (data.proposal.currency || "EUR").replace('TL', 'TRY') });
-                  } catch {
-                    return `${(data.proposal.vatAmount ?? 0).toLocaleString("tr-TR")} ${data.proposal.currency}`;
-                  }
-                })()}
-            </div>
-            <div className="text-xl font-bold text-green-700">
-                Genel Toplam: {(() => {
-                  try {
-                    return (data.proposal.grandTotal ?? 0).toLocaleString("tr-TR", { style: "currency", currency: (data.proposal.currency || "EUR").replace('TL', 'TRY') });
-                  } catch {
-                    return `${(data.proposal.grandTotal ?? 0).toLocaleString("tr-TR")} ${data.proposal.currency}`;
-                  }
-                })()}
-            </div>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-gray-50/50 border-b border-gray-100 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+             <div className="p-2 bg-white rounded-lg shadow-sm">
+                <FileSpreadsheet className="w-5 h-5 text-purple-600" />
+             </div>
+             <h3 className="font-bold text-gray-900">Teklif Kalemleri</h3>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+          
+          <div className="flex items-center gap-4 bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
+            <span className="text-sm font-medium text-gray-500 pl-2">Para Birimi:</span>
+            <select
+              value={data.proposal.currency}
+              onChange={(e) => setData(prev => ({ ...prev, proposal: { ...prev.proposal, currency: e.target.value } }))}
+              className="h-8 rounded-md border-0 bg-gray-50 py-1 pl-3 pr-8 text-sm font-semibold text-gray-900 focus:ring-2 focus:ring-purple-500 cursor-pointer hover:bg-gray-100 transition-colors"
+            >
+              <option value="EUR">EUR (€)</option>
+              <option value="TRY">TL (₺)</option>
+              <option value="USD">USD ($)</option>
+              <option value="GBP">GBP (£)</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="rounded-xl border border-gray-100 overflow-hidden shadow-sm bg-white">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <Table>
-              <TableHeader>
-                <TableRow>
+              <TableHeader className="bg-gray-50/50">
+                <TableRow className="border-b border-gray-100 hover:bg-gray-50/50">
                   <TableHead className="w-[50px]"></TableHead>
-                  <TableHead className="w-[40%]">Açıklama</TableHead>
-                  <TableHead>EN (cm)</TableHead>
-                  <TableHead>BOY (cm)</TableHead>
-                  <TableHead>Adet</TableHead>
-                  <TableHead>Miktar</TableHead>
-                  <TableHead>Birim</TableHead>
-                  <TableHead>Birim Fiyat</TableHead>
-                  <TableHead className="text-right">Toplam</TableHead>
+                  <TableHead className="w-[35%] font-semibold text-gray-600">Açıklama</TableHead>
+                  <TableHead className="font-semibold text-gray-600 text-center w-[100px]">EN (cm)</TableHead>
+                  <TableHead className="font-semibold text-gray-600 text-center w-[100px]">BOY (cm)</TableHead>
+                  <TableHead className="font-semibold text-gray-600 text-center w-[80px]">Adet</TableHead>
+                  <TableHead className="font-semibold text-gray-600 text-center w-[100px]">Miktar</TableHead>
+                  <TableHead className="font-semibold text-gray-600 w-[80px]">Birim</TableHead>
+                  <TableHead className="font-semibold text-gray-600 w-[120px]">Birim Fiyat</TableHead>
+                  <TableHead className="text-right font-semibold text-gray-600 w-[120px]">Toplam</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 <SortableContext items={data.proposal.items.map(i => i.id || '')} strategy={verticalListSortingStrategy}>
                   {data.proposal.items.map((item, index) => (
-                    <SortableRow key={item.id || index} id={item.id || ''} className={item.isHeader ? "bg-gray-50" : ""}>
+                    <SortableRow key={item.id || index} id={item.id || ''} className={`group transition-colors ${item.isHeader ? "bg-gray-50/80 hover:bg-gray-100" : "hover:bg-blue-50/30"}`}>
                       {item.isHeader ? (
-                        <TableCell colSpan={8}>
-                          <div className="flex items-center gap-2">
+                        <TableCell colSpan={9} className="py-3">
+                          <div className="flex items-center gap-3 px-2">
                             <Input
                               value={item.description}
                               onChange={(e) => handleItemChange(index, "description", e.target.value)}
-                              className="font-bold border-none bg-transparent h-auto p-0 focus-visible:ring-0 w-full"
+                              className="font-bold text-gray-900 border-transparent bg-transparent h-10 px-3 focus-visible:ring-0 focus:border-gray-200 focus:bg-white w-full text-lg placeholder:text-gray-400"
                               placeholder="Bölüm Başlığı / Açıklama Satırı"
                             />
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-red-500 hover:text-red-700 ml-auto"
+                              className="text-red-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={() => {
                                 const newItems = [...data.proposal.items];
                                 newItems.splice(index, 1);
@@ -654,63 +664,77 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
                         </TableCell>
                       ) : (
                         <>
-                          <TableCell>
+                          <TableCell className="py-2">
                             <ProductAutocomplete
                               value={item.description}
                               onChange={(val) => handleItemChange(index, "description", val)}
                               onSelect={(product) => handleProductSelect(index, product)}
-                              className="w-full"
+                              className="w-full border-transparent bg-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-500 transition-all rounded-md h-9"
                             />
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="p-1">
                             <Input
                               type="number"
                               value={(item.attributes?.enCm as number) || 0}
                               onChange={(e) => handleAttrChange(index, "enCm", Number(e.target.value))}
-                              className="w-24"
+                              className="w-full text-center border-transparent bg-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-500 transition-all rounded-md h-9 px-1"
                             />
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="p-1">
                             <Input
                               type="number"
                               value={(item.attributes?.boyCm as number) || 0}
                               onChange={(e) => handleAttrChange(index, "boyCm", Number(e.target.value))}
-                              className="w-24"
+                              className="w-full text-center border-transparent bg-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-500 transition-all rounded-md h-9 px-1"
                             />
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="p-1">
                             <Input
                               type="number"
                               value={(item.attributes?.adet as number) || 0}
                               onChange={(e) => handleAttrChange(index, "adet", Number(e.target.value))}
-                              className="w-20"
+                              className="w-full text-center border-transparent bg-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-500 transition-all rounded-md h-9 px-1"
                             />
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="p-1">
                             <Input
                               type="number"
                               value={item.quantity ?? 0}
                               onChange={(e) => handleItemChange(index, "quantity", Number(e.target.value))}
-                              className="w-24"
+                              className="w-full text-center font-medium text-gray-900 border-transparent bg-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-500 transition-all rounded-md h-9 px-1"
                             />
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="p-1">
                             <Input
                               value={item.unit}
                               onChange={(e) => handleItemChange(index, "unit", e.target.value)}
-                              className="w-20"
+                              className="w-full border-transparent bg-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-500 transition-all rounded-md h-9 px-2"
                             />
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="p-1">
                             <Input
                               type="number"
                               value={item.unitPrice ?? 0}
                               onChange={(e) => handleItemChange(index, "unitPrice", Number(e.target.value))}
-                              className="w-28"
+                              className="w-full border-transparent bg-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-500 transition-all rounded-md h-9 px-2"
                             />
                           </TableCell>
-                          <TableCell className="text-right font-medium">
+                          <TableCell className="text-right font-bold text-gray-900 py-2 pr-4">
                             {(item.totalPrice ?? 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell className="w-[40px] p-0 text-center">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                              onClick={() => {
+                                const newItems = [...data.proposal.items];
+                                newItems.splice(index, 1);
+                                setData((prev) => ({ ...prev, proposal: { ...prev.proposal, items: newItems } }));
+                              }}
+                            >
+                                <Plus className="h-4 w-4 rotate-45" />
+                            </Button>
                           </TableCell>
                         </>
                       )}
@@ -720,73 +744,129 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
               </TableBody>
             </Table>
             </DndContext>
-            <div className="p-4 border-t bg-gray-50 flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleAddLine}>
+            
+            <div className="p-4 bg-gray-50/50 border-t border-gray-100 flex gap-3">
+              <Button variant="outline" size="sm" onClick={handleAddLine} className="hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all">
                 <Plus className="w-4 h-4 mr-2" /> Satır Ekle
               </Button>
-              <Button variant="outline" size="sm" onClick={handleAddHeader}>
-                <Plus className="w-4 h-4 mr-2" /> Başlık/Açıklama Ekle
+              <Button variant="outline" size="sm" onClick={handleAddHeader} className="hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition-all">
+                <Plus className="w-4 h-4 mr-2" /> Başlık Ekle
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setIsPasteModalOpen(true)}>
+              <Button variant="outline" size="sm" onClick={() => setIsPasteModalOpen(true)} className="hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all">
                 <FileSpreadsheet className="w-4 h-4 mr-2" /> Excel'den Ekle
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+          
+          {/* Totals Summary */}
+          <div className="mt-8 flex justify-end">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 min-w-[320px] space-y-4">
+                <div className="flex justify-between items-center text-gray-500">
+                    <span className="font-medium">Ara Toplam</span>
+                    <span className="font-semibold text-gray-900">
+                        {(() => {
+                            try {
+                                return data.proposal.totalAmount.toLocaleString("tr-TR", { style: "currency", currency: (data.proposal.currency || "EUR").replace('TL', 'TRY') });
+                            } catch {
+                                return `${data.proposal.totalAmount.toLocaleString("tr-TR")} ${data.proposal.currency}`;
+                            }
+                        })()}
+                    </span>
+                </div>
+                <div className="flex justify-between items-center text-gray-500">
+                    <span className="font-medium">KDV (%{data.proposal.vatRate ?? 20})</span>
+                    <span className="font-semibold text-gray-900">
+                        {(() => {
+                            try {
+                                return (data.proposal.vatAmount ?? 0).toLocaleString("tr-TR", { style: "currency", currency: (data.proposal.currency || "EUR").replace('TL', 'TRY') });
+                            } catch {
+                                return `${(data.proposal.vatAmount ?? 0).toLocaleString("tr-TR")} ${data.proposal.currency}`;
+                            }
+                        })()}
+                    </span>
+                </div>
+                <div className="border-t border-gray-100 pt-4 flex justify-between items-center">
+                    <span className="text-lg font-bold text-gray-900">Genel Toplam</span>
+                    <span className="text-2xl font-bold text-blue-600">
+                        {(() => {
+                            try {
+                                return (data.proposal.grandTotal ?? 0).toLocaleString("tr-TR", { style: "currency", currency: (data.proposal.currency || "EUR").replace('TL', 'TRY') });
+                            } catch {
+                                return `${(data.proposal.grandTotal ?? 0).toLocaleString("tr-TR")} ${data.proposal.currency}`;
+                            }
+                        })()}
+                    </span>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <Dialog open={isPasteModalOpen} onOpenChange={setIsPasteModalOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Excel'den Ürün Ekle</DialogTitle>
+        <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden gap-0 rounded-2xl">
+          <DialogHeader className="p-6 bg-gray-50 border-b">
+            <DialogTitle className="flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-green-600" />
+                Excel'den Ürün Ekle
+            </DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="bg-blue-50 p-4 rounded-md text-sm text-blue-800">
-              Excel'den ürün listesini kopyalayıp aşağıdaki alana yapıştırın. Sütunların sırası önemli değildir.
+          <div className="p-6 space-y-4">
+            <div className="bg-blue-50 p-4 rounded-xl text-sm text-blue-800 border border-blue-100">
+              Excel'den ürün listesini kopyalayıp aşağıdaki alana yapıştırın. Yapay zeka sütunları otomatik olarak algılayacaktır.
             </div>
             <textarea
-              className="flex min-h-[200px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              placeholder="Ürün Adı | Adet | Birim | Fiyat..."
+              className="flex min-h-[200px] w-full rounded-xl border border-gray-200 bg-white px-4 py-4 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent resize-y placeholder:text-gray-400"
+              placeholder="Örnek:
+Laptop | 5 Adet | 25000 TL
+Masa | 2 Adet | 5000 TL"
               value={pastedItems}
               onChange={(e) => setPastedItems(e.target.value)}
             />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPasteModalOpen(false)}>
+          <DialogFooter className="p-6 bg-gray-50 border-t gap-2">
+            <Button variant="outline" onClick={() => setIsPasteModalOpen(false)} className="rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200">
               İptal
             </Button>
-            <Button onClick={handlePasteExcel} disabled={!pastedItems.trim() || isParsing}>
+            <Button onClick={handlePasteExcel} disabled={!pastedItems.trim() || isParsing} className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md shadow-blue-200">
               {isParsing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Ekle
+              Otomatik Ayrıştır ve Ekle
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Action Buttons */}
-      <div className="flex justify-end gap-4">
-        <Button 
-            variant="outline" 
-            onClick={onSuccess}
-            disabled={isSaving}
-        >
-            İptal
-        </Button>
-        <Button 
-            onClick={handleSave} 
-            disabled={isSaving}
-            className="bg-blue-600 hover:bg-blue-700 text-white min-w-[150px]"
-        >
-            {isSaving ? (
-                <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Kaydediliyor...
-                </>
-            ) : (
-                <>
-                    <Save className="mr-2 h-4 w-4" /> Onayla ve Kaydet
-                </>
-            )}
-        </Button>
+      <div className="sticky bottom-4 z-50">
+        <div className="bg-white/80 backdrop-blur-md border border-gray-200 shadow-2xl rounded-2xl p-4 flex justify-between items-center max-w-4xl mx-auto">
+            <div className="text-sm text-gray-500 font-medium pl-2">
+                Teklif hazırlanıyor...
+            </div>
+            <div className="flex gap-3">
+                <Button 
+                    variant="ghost" 
+                    onClick={onSuccess}
+                    disabled={isSaving}
+                    className="hover:bg-red-50 hover:text-red-600 rounded-xl"
+                >
+                    İptal
+                </Button>
+                <Button 
+                    onClick={handleSave} 
+                    disabled={isSaving}
+                    className="bg-blue-600 hover:bg-blue-700 text-white min-w-[180px] rounded-xl shadow-lg shadow-blue-200 transition-all hover:scale-105"
+                >
+                    {isSaving ? (
+                        <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Kaydediliyor...
+                        </>
+                    ) : (
+                        <>
+                            <Save className="mr-2 h-5 w-5" /> Onayla ve Kaydet
+                        </>
+                    )}
+                </Button>
+            </div>
+        </div>
       </div>
     </div>
   );

@@ -48,7 +48,9 @@ export async function createActivity(data: CreateActivityInput) {
 
     console.log("Creating activity via Supabase API...");
 
-    const { error } = await supabase.from('activities').insert({
+    const session = await getSession();
+
+    const { data: inserted, error } = await supabase.from('activities').insert({
       type,
       subject,
       description,
@@ -62,9 +64,19 @@ export async function createActivity(data: CreateActivityInput) {
       recurrence_rule: recurrenceRule,
       reminders,
       status: status || "OPEN",
-    });
+    }).select().single();
 
     if (error) throw error;
+
+    await logActivity({
+      action: 'Görev Oluşturuldu',
+      entityType: 'activities',
+      entityId: inserted.id,
+      entityName: subject,
+      userId: session?.userId,
+      companyId: companyId,
+      details: { type, priority, status }
+    });
 
     revalidatePath("/crm"); // Revalidate broadly or specific paths
     return { success: true, message: "Aktivite başarıyla oluşturuldu." };

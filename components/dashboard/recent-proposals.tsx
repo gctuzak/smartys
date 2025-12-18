@@ -1,16 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { formatCurrency } from "@/lib/utils";
 import { ProposalDetailModal } from "@/components/proposals/proposal-detail-modal";
 import { CompanyModal } from "@/components/companies/company-modal";
+import { Proposal } from "@/app/actions/dashboard";
 
 interface RecentProposalsProps {
-  proposals: any[];
+  proposals: Proposal[];
 }
 
 export function RecentProposals({ proposals }: RecentProposalsProps) {
@@ -37,94 +36,95 @@ export function RecentProposals({ proposals }: RecentProposalsProps) {
     switch (normalizedStatus) {
       case 'approved':
       case 'converted_to_order':
-        return { label: 'Onaylandı', className: 'bg-green-100 text-green-800' };
+        return { label: 'Onaylandı', className: 'bg-green-50 text-green-700 border border-green-200' };
       case 'rejected':
-        return { label: 'Reddedildi', className: 'bg-red-100 text-red-800' };
+        return { label: 'Reddedildi', className: 'bg-red-50 text-red-700 border border-red-200' };
       case 'draft':
-        return { label: 'Taslak', className: 'bg-gray-100 text-gray-800' };
+        return { label: 'Taslak', className: 'bg-gray-50 text-gray-700 border border-gray-200' };
       case 'sent':
-        return { label: 'Gönderildi', className: 'bg-blue-100 text-blue-800' };
+        return { label: 'Gönderildi', className: 'bg-blue-50 text-blue-700 border border-blue-200' };
       case 'needs_revision':
-        return { label: 'Revize İsteniyor', className: 'bg-orange-100 text-orange-800' };
+        return { label: 'Revize', className: 'bg-orange-50 text-orange-700 border border-orange-200' };
       case 'pending':
-        return { label: 'Beklemede', className: 'bg-yellow-100 text-yellow-800' };
+        return { label: 'Beklemede', className: 'bg-yellow-50 text-yellow-700 border border-yellow-200' };
       default:
-        return { label: 'Beklemede', className: 'bg-gray-100 text-gray-800' };
+        return { label: 'Beklemede', className: 'bg-gray-50 text-gray-700 border border-gray-200' };
     }
   };
 
   return (
     <>
-      <Card className="col-span-1">
-        <CardHeader>
-          <CardTitle>Son Teklifler</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Müşteri</TableHead>
-                <TableHead>Tutar</TableHead>
-                <TableHead>Durum</TableHead>
-                <TableHead className="text-right">Tarih</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {proposals.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    Henüz teklif yok.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                proposals.map((proposal) => {
-                  const statusBadge = getStatusBadge(proposal.status);
-                  return (
-                    <TableRow 
-                      key={proposal.id} 
-                      className="cursor-pointer hover:bg-gray-50"
-                      onClick={() => handleProposalClick(proposal.id)}
-                    >
-                      <TableCell className="font-medium">
-                        <span 
-                          className="hover:underline hover:text-blue-600"
-                          onClick={(e) => handleCompanyClick(e, proposal.companies)}
-                        >
-                          {proposal.companies?.name || "Bilinmiyor"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {formatCurrency(proposal.total_amount, proposal.currency)}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusBadge.className}`}>
-                          {statusBadge.label}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {format(new Date(proposal.created_at), "d MMM", { locale: tr })}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <div className="col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <h3 className="text-lg font-bold text-gray-900">Son Teklifler</h3>
+        </div>
+        <div className="divide-y divide-gray-50">
+          {proposals.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              Henüz teklif bulunmuyor.
+            </div>
+          ) : (
+            proposals.map((proposal) => {
+              const statusBadge = getStatusBadge(proposal.status);
+              const companyName = proposal.companies?.name || "Bilinmiyor";
+              const companyInitial = companyName.charAt(0).toUpperCase();
 
-      <ProposalDetailModal
-        isOpen={isProposalModalOpen}
-        onClose={() => setIsProposalModalOpen(false)}
-        proposalId={selectedProposalId}
-      />
+              return (
+                <div 
+                  key={proposal.id} 
+                  className="flex items-center justify-between p-4 hover:bg-gray-50/50 transition-colors cursor-pointer group"
+                  onClick={() => handleProposalClick(proposal.id)}
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm">
+                      {companyInitial}
+                    </div>
+                    <div>
+                      <p 
+                        className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors"
+                        onClick={(e) => handleCompanyClick(e, proposal.companies)}
+                      >
+                        {companyName}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {proposal.proposal_no ? `#${proposal.proposal_no}` : ''} • {formatCurrency(proposal.total_amount, proposal.currency)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusBadge.className}`}>
+                      {statusBadge.label}
+                    </span>
+                    <div className="text-xs text-gray-400 hidden sm:block">
+                      {proposal.created_at ? format(new Date(proposal.created_at), "d MMM", { locale: tr }) : '-'}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
 
-      {selectedCompany && (
+      {isProposalModalOpen && selectedProposalId && (
+        <ProposalDetailModal
+          isOpen={isProposalModalOpen}
+          onClose={() => {
+            setIsProposalModalOpen(false);
+            setSelectedProposalId(null);
+          }}
+          proposalId={selectedProposalId}
+        />
+      )}
+
+      {isCompanyModalOpen && selectedCompany && (
         <CompanyModal
           isOpen={isCompanyModalOpen}
-          onClose={() => setIsCompanyModalOpen(false)}
-          company={selectedCompany}
-          onSuccess={() => {}}
+          onClose={() => {
+            setIsCompanyModalOpen(false);
+            setSelectedCompany(null);
+          }}
+          companyId={selectedCompany.id}
         />
       )}
     </>
