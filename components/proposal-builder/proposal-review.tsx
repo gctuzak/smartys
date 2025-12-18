@@ -13,10 +13,27 @@ import {
 } from "@/components/ui/table";
 import { saveProposalAction } from "@/app/actions/save-proposal";
 import { toast } from "sonner";
-import { Loader2, Save, Plus, FileSpreadsheet } from "lucide-react";
+import { Loader2, Save, Plus, FileSpreadsheet, GripVertical } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ProductAutocomplete } from "./product-autocomplete";
 import { ProductSearchResult } from "@/app/actions/search-products";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface ProposalReviewProps {
   initialData: ParsedData;
@@ -24,11 +41,103 @@ interface ProposalReviewProps {
   onSuccess: () => void;
 }
 
+interface SortableRowProps {
+  id: string;
+  children: React.ReactNode;
+  className?: string;
+}
+
+function SortableRow({ id, children, className }: SortableRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 'auto',
+    position: isDragging ? 'relative' as const : undefined,
+  };
+
+  return (
+    <TableRow
+      ref={setNodeRef}
+      style={style}
+      className={`${isDragging ? "bg-accent opacity-50 shadow-md" : ""} ${className || ""}`}
+    >
+      <TableCell className="w-[40px] p-0 text-center align-middle">
+        <div 
+            {...attributes} 
+            {...listeners} 
+            className="cursor-grab hover:bg-gray-100 p-2 rounded-md inline-flex items-center justify-center active:cursor-grabbing"
+        >
+            <GripVertical className="h-4 w-4 text-gray-400" />
+        </div>
+      </TableCell>
+      {children}
+    </TableRow>
+  );
+}
+
 export function ProposalReview({ initialData, originalFile, onSuccess }: ProposalReviewProps) {
-  const [data, setData] = useState<ParsedData>(() => ({
-    ...initialData,
-    person: initialData.person ?? { name: "", email: "", phone: "", title: "" }
-  }));
+  const [data, setData] = useState<ParsedData>(() => {
+    // Ensure all items have an ID for drag and drop
+    const itemsWithIds = initialData.proposal.items.map(item => ({
+      ...item,
+      id: item.id || crypto.randomUUID()
+    }));
+    
+    return {
+      ...initialData,
+      person: initialData.person ?? { name: "", email: "", phone: "", title: "" },
+      proposal: {
+        ...initialData.proposal,
+        items: itemsWithIds
+      }
+    };
+  });
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setData((prev) => {
+        const oldIndex = prev.proposal.items.findIndex((item) => item.id === active.id);
+        const newIndex = prev.proposal.items.findIndex((item) => item.id === over.id);
+        
+        if (oldIndex !== -1 && newIndex !== -1) {
+            const newItems = arrayMove(prev.proposal.items, oldIndex, newIndex);
+            // Update order field based on new index
+            const updatedItems = newItems.map((item, index) => ({
+                ...item,
+                order: index
+            }));
+            
+            return {
+                ...prev,
+                proposal: {
+                    ...prev.proposal,
+                    items: updatedItems
+                }
+            };
+        }
+        return prev;
+      });
+    }
+  };
+
   const [isSaving, setIsSaving] = useState(false);
 
   const handleCompanyChange = (field: string, value: string) => {
@@ -120,12 +229,69 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
     const newItems = [...data.proposal.items];
     const attrs: Record<string, unknown> = { ...(newItems[index].attributes || {}) };
     attrs[key] = value;
-    newItems[index] = { ...newItems[index], attributes: attrs };
+    
+    // Otomatik Miktar Hesaplama (m2 veya mt)
+    const en = key === 'enCm' ? value : Number(attrs.enCm) || 0;
+    const boy = key === 'boyCm' ? value : Number(attrs.boyCm) || 0;
+    const adet = key === 'adet' ? value : Number(attrs.adet) || 0;
+
+    let newQuantity = newItems[index].quantity;
+
+    if (en > 0 && boy > 0) {
+      const adetVal = adet || 1;
+      
+      // Metretül (mt) kontrolü: En veya Boy < 70cm ise
+      if (en < 70 || boy < 70) {
+        // Uzun kenar metretül olarak baz alınır
+        const lengthCm = Math.max(en, boy);
+        const mt = (lengthCm / 100) * adetVal;
+        newQuantity = Number(mt.toFixed(2));
+        
+        // Birim güncelleme (eğer uygunsa)
+        if (!newItems[index].unit || newItems[index].unit === 'adet' || newItems[index].unit === 'm²') {
+          newItems[index].unit = 'mt';
+        }
+      } else {
+        // m2 hesabı: (En/100) * (Boy/100) * Adet
+        const m2 = (en / 100) * (boy / 100) * adetVal;
+        newQuantity = Number(m2.toFixed(2));
+        
+        // Birim güncelleme (eğer uygunsa)
+        if (!newItems[index].unit || newItems[index].unit === 'adet' || newItems[index].unit === 'mt') {
+          newItems[index].unit = 'm²';
+        }
+      }
+    } else if (key === 'adet' && adet > 0 && en === 0 && boy === 0) {
+      // Sadece adet değiştiyse ve boyut yoksa miktarı adete eşitle
+      newQuantity = adet;
+    }
+
+    newItems[index] = { 
+      ...newItems[index], 
+      attributes: attrs,
+      quantity: newQuantity
+    };
+
+    // Recalculate total price with new quantity
+    const qty = Number(newQuantity) || 0;
+    const price = Number(newItems[index].unitPrice) || 0;
+    newItems[index].totalPrice = qty * price;
+
+    // Recalculate grand totals
+    const newTotalAmount = newItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+    const vatRate = data.proposal.vatRate ?? 20;
+    const vatAmount = newTotalAmount * (vatRate / 100);
+    const grandTotal = newTotalAmount + vatAmount;
+
     setData((prev) => ({
       ...prev,
       proposal: {
         ...prev.proposal,
         items: newItems,
+        totalAmount: newTotalAmount,
+        vatRate,
+        vatAmount,
+        grandTotal
       },
     }));
   };
@@ -138,6 +304,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
         items: [
           ...prev.proposal.items,
           {
+            id: crypto.randomUUID(),
             description: "",
             quantity: 1,
             unit: "adet",
@@ -158,6 +325,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
         items: [
           ...prev.proposal.items,
           {
+            id: crypto.randomUUID(),
             description: "",
             quantity: undefined,
             unit: "",
@@ -186,6 +354,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
       if (result.success && result.data) {
         const newItems = result.data.map((item: any) => ({
           ...item,
+          id: crypto.randomUUID(),
           isHeader: false,
         }));
         
@@ -441,9 +610,11 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]"></TableHead>
                   <TableHead className="w-[40%]">Açıklama</TableHead>
                   <TableHead>EN (cm)</TableHead>
                   <TableHead>BOY (cm)</TableHead>
@@ -455,97 +626,100 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.proposal.items.map((item, index) => (
-                  <TableRow key={index} className={item.isHeader ? "bg-gray-50" : ""}>
-                    {item.isHeader ? (
-                      <TableCell colSpan={8}>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            value={item.description}
-                            onChange={(e) => handleItemChange(index, "description", e.target.value)}
-                            className="font-bold border-none bg-transparent h-auto p-0 focus-visible:ring-0 w-full"
-                            placeholder="Bölüm Başlığı / Açıklama Satırı"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-700 ml-auto"
-                            onClick={() => {
-                              const newItems = [...data.proposal.items];
-                              newItems.splice(index, 1);
-                              setData((prev) => ({ ...prev, proposal: { ...prev.proposal, items: newItems } }));
-                            }}
-                          >
-                            Sil
-                          </Button>
-                        </div>
-                      </TableCell>
-                    ) : (
-                      <>
-                        <TableCell>
-                          <ProductAutocomplete
-                            value={item.description}
-                            onChange={(val) => handleItemChange(index, "description", val)}
-                            onSelect={(product) => handleProductSelect(index, product)}
-                            className="w-full"
-                          />
+                <SortableContext items={data.proposal.items.map(i => i.id || '')} strategy={verticalListSortingStrategy}>
+                  {data.proposal.items.map((item, index) => (
+                    <SortableRow key={item.id || index} id={item.id || ''} className={item.isHeader ? "bg-gray-50" : ""}>
+                      {item.isHeader ? (
+                        <TableCell colSpan={8}>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={item.description}
+                              onChange={(e) => handleItemChange(index, "description", e.target.value)}
+                              className="font-bold border-none bg-transparent h-auto p-0 focus-visible:ring-0 w-full"
+                              placeholder="Bölüm Başlığı / Açıklama Satırı"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-500 hover:text-red-700 ml-auto"
+                              onClick={() => {
+                                const newItems = [...data.proposal.items];
+                                newItems.splice(index, 1);
+                                setData((prev) => ({ ...prev, proposal: { ...prev.proposal, items: newItems } }));
+                              }}
+                            >
+                              Sil
+                            </Button>
+                          </div>
                         </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            value={(item.attributes?.enCm as number) || 0}
-                            onChange={(e) => handleAttrChange(index, "enCm", Number(e.target.value))}
-                            className="w-24"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            value={(item.attributes?.boyCm as number) || 0}
-                            onChange={(e) => handleAttrChange(index, "boyCm", Number(e.target.value))}
-                            className="w-24"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            value={(item.attributes?.adet as number) || 0}
-                            onChange={(e) => handleAttrChange(index, "adet", Number(e.target.value))}
-                            className="w-20"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            value={item.quantity ?? 0}
-                            onChange={(e) => handleItemChange(index, "quantity", Number(e.target.value))}
-                            className="w-24"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={item.unit}
-                            onChange={(e) => handleItemChange(index, "unit", e.target.value)}
-                            className="w-20"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            value={item.unitPrice ?? 0}
-                            onChange={(e) => handleItemChange(index, "unitPrice", Number(e.target.value))}
-                            className="w-28"
-                          />
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {(item.totalPrice ?? 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })}
-                        </TableCell>
-                      </>
-                    )}
-                  </TableRow>
-                ))}
+                      ) : (
+                        <>
+                          <TableCell>
+                            <ProductAutocomplete
+                              value={item.description}
+                              onChange={(val) => handleItemChange(index, "description", val)}
+                              onSelect={(product) => handleProductSelect(index, product)}
+                              className="w-full"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              value={(item.attributes?.enCm as number) || 0}
+                              onChange={(e) => handleAttrChange(index, "enCm", Number(e.target.value))}
+                              className="w-24"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              value={(item.attributes?.boyCm as number) || 0}
+                              onChange={(e) => handleAttrChange(index, "boyCm", Number(e.target.value))}
+                              className="w-24"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              value={(item.attributes?.adet as number) || 0}
+                              onChange={(e) => handleAttrChange(index, "adet", Number(e.target.value))}
+                              className="w-20"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              value={item.quantity ?? 0}
+                              onChange={(e) => handleItemChange(index, "quantity", Number(e.target.value))}
+                              className="w-24"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={item.unit}
+                              onChange={(e) => handleItemChange(index, "unit", e.target.value)}
+                              className="w-20"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              value={item.unitPrice ?? 0}
+                              onChange={(e) => handleItemChange(index, "unitPrice", Number(e.target.value))}
+                              className="w-28"
+                            />
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {(item.totalPrice ?? 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })}
+                          </TableCell>
+                        </>
+                      )}
+                    </SortableRow>
+                  ))}
+                </SortableContext>
               </TableBody>
             </Table>
+            </DndContext>
             <div className="p-4 border-t bg-gray-50 flex gap-2">
               <Button variant="outline" size="sm" onClick={handleAddLine}>
                 <Plus className="w-4 h-4 mr-2" /> Satır Ekle

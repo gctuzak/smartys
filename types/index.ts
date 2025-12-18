@@ -80,6 +80,7 @@ export interface ParsedData {
     paymentTerms?: string;
     proposalDate?: Date;
     items: {
+      id?: string;
       description: string;
       quantity?: number;
       unit: string;

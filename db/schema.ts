@@ -119,6 +119,7 @@ export const products = pgTable("products", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
   code: text("code"),
+  type: text("type").default("product"), // product | service
   description: text("description"),
   unit: text("unit"),
   cost: decimal("cost", { precision: 10, scale: 2 }),

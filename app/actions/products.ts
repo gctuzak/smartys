@@ -76,6 +76,7 @@ export async function saveProductAction(data: Product) {
   const productData = {
     name: result.data.name,
     code: result.data.code,
+    type: result.data.type,
     description: result.data.description,
     unit: result.data.unit,
     cost: result.data.cost,

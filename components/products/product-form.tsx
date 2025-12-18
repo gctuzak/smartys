@@ -19,6 +19,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
     initialData || {
       name: "",
       code: "",
+      type: "product",
       description: "",
       unit: "",
       cost: 0,
@@ -54,7 +55,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
           <label className="text-sm font-medium">Ürün Adı *</label>
           <Input
@@ -71,6 +72,17 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
             onChange={(e) => handleChange("code", e.target.value)}
             placeholder="Örn: GT-001"
           />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Tip</label>
+          <select
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            value={formData.type || "product"}
+            onChange={(e) => handleChange("type", e.target.value)}
+          >
+            <option value="product">Stoklu Ürün</option>
+            <option value="service">Hizmet / Masraf</option>
+          </select>
         </div>
       </div>
 

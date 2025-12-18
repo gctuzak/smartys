@@ -36,6 +36,7 @@ export async function searchProductsAction(query: string): Promise<ProductSearch
       id: item.id,
       name: item.name,
       code: item.code,
+      type: item.type,
       unit: item.unit,
       defaultPrice: item.default_price
     }));
