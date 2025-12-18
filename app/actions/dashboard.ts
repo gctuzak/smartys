@@ -177,6 +177,10 @@ export async function getRecentOrders() {
       order_date,
       companies (
         name
+      ),
+      persons (
+        first_name,
+        last_name
       )
     `)
     .eq('representative_id', session.userId)

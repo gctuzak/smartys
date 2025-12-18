@@ -18,8 +18,14 @@ export function RecentOrders({ orders }: RecentOrdersProps) {
           </div>
         ) : (
           orders.map((order) => {
-            const isCompany = !!order.company;
-            const name = isCompany ? order.company.name : (order.person ? `${order.person.first_name} ${order.person.last_name}` : 'Bilinmeyen Müşteri');
+            // Supabase returns relations with table names (plural) by default
+            const company = order.companies || order.company;
+            const person = order.persons || order.person;
+            
+            const isCompany = !!company;
+            const name = isCompany 
+              ? company.name 
+              : (person ? `${person.first_name} ${person.last_name}` : 'Bilinmeyen Müşteri');
             const type = isCompany ? "Kurumsal" : "Bireysel";
             
             return (

@@ -122,7 +122,10 @@ export function RecentProposals({ proposals }: RecentProposalsProps) {
             setIsCompanyModalOpen(false);
             setSelectedCompany(null);
           }}
-          companyId={selectedCompany.id}
+          company={selectedCompany}
+          onSuccess={() => {
+            // Optional: refresh data if needed
+          }}
         />
       )}
     </>
