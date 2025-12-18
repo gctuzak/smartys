@@ -1,9 +1,14 @@
 'use server'
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
 import { logActivity } from "@/lib/logger";
+
+// Initialize admin client to bypass RLS
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!;
+const adminSupabase = createClient(supabaseUrl, supabaseKey);
 
 export async function saveCompanyAction(data: any) {
   try {
@@ -39,7 +44,7 @@ export async function saveCompanyAction(data: any) {
 
     if (data.id) {
       // Update
-      const { error } = await supabase
+      const { error } = await adminSupabase
         .from("companies")
         .update(companyData)
         .eq("id", data.id);
@@ -58,18 +63,17 @@ export async function saveCompanyAction(data: any) {
 
     } else {
       // Insert
-      const { data: inserted, error } = await supabase
+      const { data: inserted, error } = await adminSupabase
         .from("companies")
         .insert(companyData)
         .select()
         .single();
 
       if (error) throw error;
-      
       entityId = inserted.id;
 
       await logActivity({
-        action: 'Yeni Şirket Oluşturuldu',
+        action: 'Şirket Oluşturuldu',
         entityType: 'companies',
         entityId: entityId,
         entityName: data.name,
@@ -79,9 +83,9 @@ export async function saveCompanyAction(data: any) {
       });
     }
 
-    revalidatePath("/companies");
-    return { success: true };
-  } catch (error) {
+    revalidatePath("/crm/companies");
+    return { success: true, id: entityId };
+  } catch (error: any) {
     console.error("Save Company Error:", error);
     return { success: false, error: "Şirket kaydedilemedi." };
   }

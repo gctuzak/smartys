@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 import { supabase } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
 import { desc } from "drizzle-orm";
+import { getSession } from "@/lib/auth";
+import { logActivity } from "@/lib/logger";
 
 import { 
   createActivitySchema, 
@@ -49,8 +51,13 @@ export async function createActivity(data: CreateActivityInput) {
     console.log("Creating activity via Supabase API...");
 
     const session = await getSession();
+    
+    // Use Service Role Key to bypass RLS
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!;
+    const adminSupabase = createClient(supabaseUrl, supabaseKey);
 
-    const { data: inserted, error } = await supabase.from('activities').insert({
+    const { data: inserted, error } = await adminSupabase.from('activities').insert({
       type,
       subject,
       description,
@@ -99,8 +106,13 @@ export async function updateActivityStatus(id: string, status: "OPEN" | "IN_PROG
 
   try {
     console.log("Updating activity status via Supabase API...");
+
+    // Use Service Role Key to bypass RLS
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!;
+    const adminSupabase = createClient(supabaseUrl, supabaseKey);
     
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from('activities')
       .update({ status })
       .eq('id', id);
@@ -145,7 +157,12 @@ export async function updateActivity(id: string, data: CreateActivityInput) {
 
     console.log("Updating activity via Supabase API...");
 
-    const { error } = await supabase.from('activities').update({
+    // Use Service Role Key to bypass RLS
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!;
+    const adminSupabase = createClient(supabaseUrl, supabaseKey);
+
+    const { error } = await adminSupabase.from('activities').update({
       type,
       subject,
       description,
@@ -175,7 +192,12 @@ export async function deleteActivity(id: string) {
   try {
     console.log("Deleting activity via Supabase API...");
     
-    const { error } = await supabase
+    // Use Service Role Key to bypass RLS
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!;
+    const adminSupabase = createClient(supabaseUrl, supabaseKey);
+
+    const { error } = await adminSupabase
       .from('activities')
       .delete()
       .eq('id', id);
@@ -284,7 +306,12 @@ export async function getActivities(filters?: {
   try {
     console.log("Fetching activities via Supabase API...");
     
-    let query = supabase
+    // Use Service Role Key to bypass RLS
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!;
+    const adminSupabase = createClient(supabaseUrl, supabaseKey);
+
+    let query = adminSupabase
       .from('activities')
       .select(`
         *,

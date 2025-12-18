@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
 
 export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'OTHER';
 export type AuditEntityType = 'COMPANY' | 'PERSON' | 'PROPOSAL' | 'ORDER' | 'TASK' | 'USER' | 'DOCUMENT';
@@ -13,13 +13,13 @@ interface LogActivityParams {
   details?: any;
 }
 
+// Use Service Role Key if available (Server Side), otherwise Anon Key
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 export async function logActivity(params: LogActivityParams) {
   try {
-    // We use the Supabase client which might be using the anon key.
-    // Ensure RLS policies allow insertion for authenticated users, 
-    // or use a service role client if this is strictly server-side and secure.
-    // For now, we assume the server actions have proper auth context or the table allows insert.
-    
     const { error } = await supabase
       .from('audit_logs')
       .insert({

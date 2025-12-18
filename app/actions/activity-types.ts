@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
 import { 
   createActivityTypeSchema, 
   updateActivityTypeSchema, 
@@ -9,9 +9,14 @@ import {
   type UpdateActivityTypeInput 
 } from "@/lib/schemas/activity-types";
 
+// Initialize admin client to bypass RLS
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!;
+const adminSupabase = createClient(supabaseUrl, supabaseKey);
+
 export async function getActivityTypes() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from('activity_types')
       .select('*')
       .order('created_at', { ascending: true });
@@ -41,7 +46,7 @@ export async function createActivityType(data: CreateActivityTypeInput) {
   }
 
   try {
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from('activity_types')
       .insert(result.data);
 
@@ -62,7 +67,7 @@ export async function updateActivityType(data: UpdateActivityTypeInput) {
 
   try {
     const { id, ...updates } = result.data;
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from('activity_types')
       .update(updates)
       .eq('id', id);
@@ -78,7 +83,7 @@ export async function updateActivityType(data: UpdateActivityTypeInput) {
 
 export async function deleteActivityType(id: string) {
   try {
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from('activity_types')
       .delete()
       .eq('id', id);
