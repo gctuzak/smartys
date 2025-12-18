@@ -76,7 +76,10 @@ export function TaskCreationDialog({
   const formatDateForInput = (date?: Date | string | null) => {
     if (!date) return undefined;
     const d = new Date(date);
-    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    // Force TRT (UTC+3)
+    const trOffset = 3 * 60; // minutes
+    const shifted = new Date(d.getTime() + trOffset * 60000);
+    return shifted.toISOString().slice(0, 16);
   };
 
   const {

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FileManager } from "@/components/shared/file-manager";
+import { formatDate } from "@/lib/utils";
 
 interface OrderDetailModalProps {
   isOpen: boolean;
@@ -123,7 +124,7 @@ export function OrderDetailModal({ isOpen, onClose, orderId }: OrderDetailModalP
                 <Calendar className="h-8 w-8 text-blue-600 mb-2" />
                 <span className="text-sm text-gray-500">Sipariş Tarihi</span>
                 <span className="text-lg font-medium text-gray-900">
-                    {new Date(order.order_date || order.created_at).toLocaleDateString("tr-TR")}
+                    {formatDate(order.order_date || order.created_at)}
                 </span>
              </div>
 

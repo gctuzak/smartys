@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { formatDate } from "@/lib/utils";
 
 // Browser-safe Base64 conversion
 const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
@@ -66,7 +67,7 @@ export const generateProposalPDF = async (data: any) => {
   doc.setFontSize(10);
   doc.text(`Teklif No: ${data.proposal_no || "-"}`, margin, yPos);
 
-  const dateStr = new Date(data.proposal_date || data.created_at).toLocaleDateString("tr-TR");
+  const dateStr = formatDate(data.proposal_date || data.created_at);
   doc.text(`Tarih: ${dateStr}`, pageWidth - margin, yPos, { align: "right" });
   yPos += 7;
 

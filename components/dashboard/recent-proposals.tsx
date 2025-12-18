@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
-import { tr } from "date-fns/locale";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { ProposalDetailModal } from "@/components/proposals/proposal-detail-modal";
 import { CompanyModal } from "@/components/companies/company-modal";
 import { Proposal } from "@/app/actions/dashboard";
@@ -96,7 +94,7 @@ export function RecentProposals({ proposals }: RecentProposalsProps) {
                       {statusBadge.label}
                     </span>
                     <div className="text-xs text-gray-400 hidden sm:block">
-                      {proposal.created_at ? format(new Date(proposal.created_at), "d MMM", { locale: tr }) : '-'}
+                      {formatDate(proposal.created_at, "d MMM")}
                     </div>
                   </div>
                 </div>

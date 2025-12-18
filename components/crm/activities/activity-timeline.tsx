@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { format, isToday, isYesterday, isThisWeek, parseISO } from "date-fns";
-import { tr } from "date-fns/locale";
+import { isToday, isYesterday, isThisWeek, parseISO } from "date-fns";
+import { formatDateTime } from "@/lib/utils";
 import {
   CheckCircle2,
   Circle,
@@ -257,7 +257,7 @@ export function ActivityTimeline({
                           <span className="text-xs text-muted-foreground">
                             <span className="font-semibold text-primary/80">
                               {getTypeLabel(activity.type)}
-                            </span> • {format(new Date(activity.createdAt), "d MMMM yyyy HH:mm", { locale: tr })}
+                            </span> • {formatDateTime(activity.createdAt)}
                             {activity.assignedToUser && ` • ${activity.assignedToUser.firstName || ''} ${activity.assignedToUser.lastName || ''}`}
                           </span>
                         </div>

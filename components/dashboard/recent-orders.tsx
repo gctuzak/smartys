@@ -1,6 +1,4 @@
-import { format } from "date-fns";
-import { tr } from "date-fns/locale";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { ShoppingCart } from "lucide-react";
 
 interface RecentOrdersProps {
@@ -20,21 +18,20 @@ export function RecentOrders({ orders }: RecentOrdersProps) {
           </div>
         ) : (
           orders.map((order) => {
-            const companyName = order.companies?.name || "Bilinmiyor";
-            const companyInitial = companyName.charAt(0).toUpperCase();
-
+            const isCompany = !!order.company;
+            const name = isCompany ? order.company.name : (order.person ? `${order.person.first_name} ${order.person.last_name}` : 'Bilinmeyen Müşteri');
+            const type = isCompany ? "Kurumsal" : "Bireysel";
+            
             return (
-              <div key={order.id} className="flex items-center justify-between p-4 hover:bg-gray-50/50 transition-colors">
-                <div className="flex items-center space-x-4">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600">
-                    <ShoppingCart className="w-5 h-5" />
+              <div key={order.id} className="p-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center">
+                    <ShoppingCart className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">
-                      {order.order_no}
-                    </p>
+                    <p className="font-medium text-gray-900">{name}</p>
                     <p className="text-xs text-gray-500">
-                      {companyName}
+                      #{order.order_no} • {type}
                     </p>
                   </div>
                 </div>
@@ -43,7 +40,7 @@ export function RecentOrders({ orders }: RecentOrdersProps) {
                     {formatCurrency(order.amount, order.currency)}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {order.order_date ? format(new Date(order.order_date), "d MMM", { locale: tr }) : '-'}
+                    {formatDate(order.order_date, "d MMM")}
                   </p>
                 </div>
               </div>

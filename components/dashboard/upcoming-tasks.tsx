@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
-import { tr } from "date-fns/locale";
+import { formatDate } from "@/lib/utils";
 import { Calendar, Clock, CheckCircle2 } from "lucide-react";
 import { TaskCreationDialog } from "@/components/crm/activities/task-creation-dialog";
 import { CompanyModal } from "@/components/companies/company-modal";
@@ -83,7 +82,7 @@ export function UpcomingTasks({ tasks }: UpcomingTasksProps) {
                 </div>
                 <div className="text-xs font-medium text-gray-400 whitespace-nowrap flex items-center bg-gray-50 px-2 py-1 rounded-md">
                   <Calendar className="w-3 h-3 mr-1.5" />
-                  {task.due_date ? format(new Date(task.due_date), "d MMM", { locale: tr }) : 'Tarihsiz'}
+                  {formatDate(task.due_date, "d MMM")}
                 </div>
               </div>
             ))

@@ -1,8 +1,27 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { format } from "date-fns";
+import { tr } from "date-fns/locale";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+export function formatDate(date: Date | string | null | undefined, formatStr: string = "d MMM yyyy"): string {
+  if (!date) return '-';
+  
+  const d = new Date(date);
+  
+  // Turkey is GMT+3 (UTC+3) all year round
+  const TR_OFFSET = 3 * 60; // minutes
+  const utcTime = d.getTime() + (d.getTimezoneOffset() * 60000); // Convert local to UTC
+  const trTime = new Date(utcTime + (TR_OFFSET * 60000)); // Add TR offset
+  
+  return format(trTime, formatStr, { locale: tr });
+}
+
+export function formatDateTime(date: Date | string | null | undefined): string {
+  return formatDate(date, "d MMMM yyyy HH:mm");
 }
 
 export function toTurkishLikePattern(text: string): string {
