@@ -36,6 +36,7 @@ export async function saveCompanyAction(data: any) {
       website: data.website,
       notes: data.notes,
       authorized_person: data.authorized_person,
+      guncel_bakiye: Number(data.currentBalance) || 0,
       representative_id: data.representative_id || null,
       contact_info: data.contact_info || {},
     };

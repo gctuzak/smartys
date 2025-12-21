@@ -13,11 +13,14 @@ const productSchema = z.object({
   name: z.string().min(2, "Ürün adı en az 2 karakter olmalıdır"),
   code: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
+  type: z.string().default("product"),
   unit: z.string().optional().nullable(),
   cost: z.coerce.number().min(0).optional().nullable(),
   defaultPrice: z.coerce.number().min(0).optional().nullable(),
   currency: z.string().default("EUR"),
   vatRate: z.coerce.number().min(0).default(20),
+  stockQuantity: z.coerce.number().default(0),
+  criticalStockLevel: z.coerce.number().default(10),
 });
 
 export type Product = z.infer<typeof productSchema>;
@@ -41,6 +44,7 @@ export async function getProductsAction(page = 1, pageSize = 20, search = "", so
     let dbSortField = sortField;
     if (sortField === "defaultPrice") dbSortField = "default_price";
     if (sortField === "vatRate") dbSortField = "vat_rate";
+    if (sortField === "stockQuantity") dbSortField = "stok_miktari";
 
     const { data, count, error } = await query
       .order(dbSortField, { ascending: sortOrder === "asc" })
@@ -52,6 +56,8 @@ export async function getProductsAction(page = 1, pageSize = 20, search = "", so
       ...item,
       defaultPrice: item.default_price,
       vatRate: item.vat_rate,
+      stockQuantity: item.stok_miktari,
+      criticalStockLevel: item.kritik_stok_seviyesi,
     }));
 
     return {
@@ -83,6 +89,8 @@ export async function saveProductAction(data: Product) {
     default_price: result.data.defaultPrice,
     currency: result.data.currency,
     vat_rate: result.data.vatRate,
+    stok_miktari: result.data.stockQuantity,
+    kritik_stok_seviyesi: result.data.criticalStockLevel,
   };
 
   try {

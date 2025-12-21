@@ -118,6 +118,7 @@ export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyMod
         website: company.website || "",
         notes: company.notes || "",
         authorized_person: company.authorized_person || "",
+        currentBalance: company.guncel_bakiye || 0,
         representative_id: company.representative_id || "",
       });
 
@@ -294,6 +295,17 @@ export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyMod
                 value={formData.authorized_person}
                 onChange={handleChange}
                 placeholder="Yetkili Adı Soyadı"
+                className="bg-gray-50/50"
+              />
+            </div>
+            <div className="md:col-span-3">
+               <label className="text-sm font-medium mb-1.5 block text-gray-700">Güncel Bakiye</label>
+              <Input
+                type="number"
+                name="currentBalance"
+                value={formData.currentBalance}
+                onChange={handleChange}
+                placeholder="0.00"
                 className="bg-gray-50/50"
               />
             </div>

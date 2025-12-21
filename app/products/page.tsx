@@ -180,6 +180,11 @@ export default function ProductsPage() {
                       </TableCell>
                       <TableCell>{product.unit || "-"}</TableCell>
                       <TableCell>
+                        <span className={product.stockQuantity && product.criticalStockLevel && product.stockQuantity <= product.criticalStockLevel ? "text-red-600 font-bold" : ""}>
+                            {product.stockQuantity || 0}
+                        </span>
+                      </TableCell>
+                      <TableCell>
                         {product.cost ? (
                             <span>{Number(product.cost).toFixed(2)} {product.currency}</span>
                         ) : "-"}

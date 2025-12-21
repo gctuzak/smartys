@@ -129,6 +129,27 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
+          <label className="text-sm font-medium">Stok Miktarı</label>
+          <Input
+            type="number"
+            min="0"
+            value={formData.stockQuantity || 0}
+            onChange={(e) => handleChange("stockQuantity", Number(e.target.value))}
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Kritik Stok Seviyesi</label>
+          <Input
+            type="number"
+            min="0"
+            value={formData.criticalStockLevel || 0}
+            onChange={(e) => handleChange("criticalStockLevel", Number(e.target.value))}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
           <label className="text-sm font-medium">Maliyet</label>
           <Input
             type="number"

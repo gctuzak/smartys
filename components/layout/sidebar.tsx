@@ -16,7 +16,9 @@ import {
   ShoppingCart,
   ListTodo,
   User,
-  LogOut
+  LogOut,
+  Receipt,
+  Warehouse
 } from "lucide-react";
 
 const navigation = [
@@ -25,6 +27,8 @@ const navigation = [
   { name: "Görevler", href: "/tasks", icon: ListTodo },
   { name: "Teklifler", href: "/proposals", icon: FileText },
   { name: "Siparişler", href: "/orders", icon: ShoppingCart },
+  { name: "Faturalar", href: "/muhasebe/faturalar", icon: Receipt },
+  { name: "Stok Durumu", href: "/muhasebe/stok", icon: Warehouse },
   { name: "Şirketler", href: "/companies", icon: Building2 },
   { name: "Kişiler", href: "/persons", icon: Users },
   { name: "Temsilciler", href: "/users", icon: UserCheck },

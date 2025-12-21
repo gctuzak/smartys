@@ -35,6 +35,7 @@ export const companies = pgTable("companies", {
   website: text("website"),
   notes: text("notes"), // New: Notlar
   authorizedPerson: text("authorized_person"), // New: Yetkili
+  currentBalance: decimal("guncel_bakiye", { precision: 10, scale: 2 }).default("0"), // New: Güncel Bakiye
   representativeId: uuid("representative_id").references(() => users.id),
   contactInfo: jsonb("contact_info"), // Keeping for legacy/extra data
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -126,6 +127,48 @@ export const products = pgTable("products", {
   defaultPrice: decimal("default_price", { precision: 10, scale: 2 }),
   currency: text("currency").default("EUR"),
   vatRate: integer("vat_rate").default(20),
+  stockQuantity: integer("stok_miktari").default(0), // New: Stok Miktarı
+  criticalStockLevel: integer("kritik_stok_seviyesi").default(10), // New: Kritik Stok Seviyesi
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const faturalar = pgTable("faturalar", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id").references(() => companies.id),
+  faturaNo: text("fatura_no").unique().notNull(),
+  tarih: timestamp("tarih").defaultNow().notNull(),
+  sonOdemeTarihi: timestamp("son_odeme_tarihi"),
+  tip: text("tip").notNull(), // SATIS, ALIS, IADE
+  durum: text("durum").default("TASLAK"), // TASLAK, ONAYLI, IPTAL
+  araToplam: decimal("ara_toplam", { precision: 10, scale: 2 }).default("0"),
+  kdvToplam: decimal("kdv_toplam", { precision: 10, scale: 2 }).default("0"),
+  genelToplam: decimal("genel_toplam", { precision: 10, scale: 2 }).default("0"),
+  paraBirimi: text("para_birimi").default("TRY"),
+  dovizKuru: decimal("doviz_kuru", { precision: 10, scale: 4 }).default("1"),
+  notlar: text("notlar"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const faturaKalemleri = pgTable("fatura_kalemleri", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  faturaId: uuid("fatura_id").references(() => faturalar.id, { onDelete: "cascade" }).notNull(),
+  productId: uuid("product_id").references(() => products.id),
+  aciklama: text("aciklama").notNull(),
+  miktar: integer("miktar").notNull(),
+  birim: text("birim").default("Adet"),
+  birimFiyat: decimal("birim_fiyat", { precision: 10, scale: 2 }).notNull(),
+  kdvOrani: integer("kdv_orani").default(20),
+  toplamTutar: decimal("toplam_tutar", { precision: 10, scale: 2 }).notNull(),
+});
+
+export const stokHareketleri = pgTable("stok_hareketleri", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  productId: uuid("product_id").references(() => products.id).notNull(),
+  faturaId: uuid("fatura_id").references(() => faturalar.id), // Opsiyonel, manuel hareket olabilir
+  islemTuru: text("islem_turu").notNull(), // GIRIS, CIKIS
+  miktar: integer("miktar").notNull(),
+  tarih: timestamp("tarih").defaultNow().notNull(),
+  aciklama: text("aciklama"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -295,5 +338,36 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   company: one(companies, {
     fields: [auditLogs.companyId],
     references: [companies.id],
+  }),
+}));
+
+export const faturalarRelations = relations(faturalar, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [faturalar.companyId],
+    references: [companies.id],
+  }),
+  kalemler: many(faturaKalemleri),
+  stokHareketleri: many(stokHareketleri),
+}));
+
+export const faturaKalemleriRelations = relations(faturaKalemleri, ({ one }) => ({
+  fatura: one(faturalar, {
+    fields: [faturaKalemleri.faturaId],
+    references: [faturalar.id],
+  }),
+  product: one(products, {
+    fields: [faturaKalemleri.productId],
+    references: [products.id],
+  }),
+}));
+
+export const stokHareketleriRelations = relations(stokHareketleri, ({ one }) => ({
+  product: one(products, {
+    fields: [stokHareketleri.productId],
+    references: [products.id],
+  }),
+  fatura: one(faturalar, {
+    fields: [stokHareketleri.faturaId],
+    references: [faturalar.id],
   }),
 }));
