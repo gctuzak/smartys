@@ -73,6 +73,20 @@ export async function saveCompanyAction(data: any) {
       if (error) throw error;
       entityId = inserted.id;
 
+      // If there is an initial balance, add an Opening Balance transaction
+      if (companyData.guncel_bakiye && companyData.guncel_bakiye !== 0) {
+        await adminSupabase.from("cari_hareketler").insert({
+          company_id: entityId,
+          islem_turu: "ACILIS_BAKIYESI",
+          belge_no: "",
+          aciklama: "Açılış Bakiyesi",
+          borc: companyData.guncel_bakiye > 0 ? companyData.guncel_bakiye : 0,
+          alacak: companyData.guncel_bakiye < 0 ? Math.abs(companyData.guncel_bakiye) : 0,
+          bakiye: companyData.guncel_bakiye,
+          tarih: new Date().toISOString()
+        });
+      }
+
       await logActivity({
         action: 'Şirket Oluşturuldu',
         entityType: 'companies',

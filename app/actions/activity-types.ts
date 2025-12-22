@@ -48,14 +48,22 @@ export async function createActivityType(data: CreateActivityTypeInput) {
   try {
     const { error } = await adminSupabase
       .from('activity_types')
-      .insert(result.data);
+      .insert({
+        name: result.data.name,
+        label: result.data.label,
+        color: result.data.color,
+        is_active: result.data.isActive,
+      });
 
     if (error) throw error;
     revalidatePath("/settings/activity-types");
     return { success: true, message: "Aktivite türü oluşturuldu." };
   } catch (error) {
     console.error("Error creating activity type:", error);
-    return { success: false, error: "Oluşturulurken hata oluştu." };
+    if ((error as any)?.code === '23505') {
+      return { success: false, error: "Bu kod adına sahip bir aktivite türü zaten var." };
+    }
+    return { success: false, error: (error as any)?.message || "Oluşturulurken hata oluştu." };
   }
 }
 
@@ -69,7 +77,12 @@ export async function updateActivityType(data: UpdateActivityTypeInput) {
     const { id, ...updates } = result.data;
     const { error } = await adminSupabase
       .from('activity_types')
-      .update(updates)
+      .update({
+        name: updates.name,
+        label: updates.label,
+        color: updates.color,
+        is_active: updates.isActive,
+      })
       .eq('id', id);
 
     if (error) throw error;
@@ -77,7 +90,10 @@ export async function updateActivityType(data: UpdateActivityTypeInput) {
     return { success: true, message: "Aktivite türü güncellendi." };
   } catch (error) {
     console.error("Error updating activity type:", error);
-    return { success: false, error: "Güncellenirken hata oluştu." };
+    if ((error as any)?.code === '23505') {
+      return { success: false, error: "Bu kod adına sahip bir aktivite türü zaten var." };
+    }
+    return { success: false, error: (error as any)?.message || "Güncellenirken hata oluştu." };
   }
 }
 

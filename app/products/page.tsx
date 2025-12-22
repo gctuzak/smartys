@@ -160,7 +160,7 @@ export default function ProductsPage() {
               <TableBody>
                 {products.length === 0 && !loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                       Ürün bulunamadı.
                     </TableCell>
                   </TableRow>

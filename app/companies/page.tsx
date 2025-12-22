@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Loader2, Building2, Trash2, Edit, Plus, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, Loader2, Building2, Trash2, Edit, Plus, ArrowUpDown, ArrowUp, ArrowDown, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -127,6 +127,7 @@ export default function CompaniesPage() {
                     Şirket Adı <SortIcon field="name" />
                   </div>
                 </TableHead>
+                <TableHead>Vergi No / Daire</TableHead>
                 <TableHead onClick={() => handleSort("type")} className="cursor-pointer hover:bg-gray-100">
                   <div className="flex items-center">
                     Tür <SortIcon field="type" />
@@ -162,6 +163,10 @@ export default function CompaniesPage() {
                       <Building2 className="w-4 h-4 text-gray-400" />
                       {company.name}
                     </TableCell>
+                    <TableCell>
+                      <div className="text-sm">{company.tax_no || "-"}</div>
+                      <div className="text-xs text-gray-500">{company.tax_office}</div>
+                    </TableCell>
                     <TableCell>{company.type || "-"}</TableCell>
                     <TableCell>
                       {company.city ? `${company.city}${company.district ? ` / ${company.district}` : ""}` : "-"}
@@ -175,6 +180,15 @@ export default function CompaniesPage() {
                     <TableCell>{company.email1 || "-"}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => router.push(`/muhasebe/cariler/${company.id}`)}
+                          className="h-8 w-8 text-gray-500 hover:text-blue-600"
+                          title="Cari Ekstre"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"

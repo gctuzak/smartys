@@ -50,6 +50,8 @@ export function ActivityTypesTable({ initialTypes }: ActivityTypesTableProps) {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<CreateActivityTypeInput>({
     resolver: zodResolver(createActivityTypeSchema),
@@ -60,6 +62,8 @@ export function ActivityTypesTable({ initialTypes }: ActivityTypesTableProps) {
       isActive: true,
     },
   });
+
+  const watchedColor = watch("color");
 
   const sortedTypes = useMemo(() => {
     return [...types].sort((a, b) => {
@@ -179,7 +183,12 @@ export function ActivityTypesTable({ initialTypes }: ActivityTypesTableProps) {
             <div>
               <label className="text-sm font-medium">Renk</label>
               <div className="flex gap-2">
-                <Input type="color" {...register("color")} className="w-12 p-1 h-10" />
+                <Input 
+                  type="color" 
+                  value={watchedColor || "#3b82f6"} 
+                  onChange={(e) => setValue("color", e.target.value)}
+                  className="w-12 p-1 h-10" 
+                />
                 <Input {...register("color")} placeholder="#3b82f6" />
               </div>
             </div>

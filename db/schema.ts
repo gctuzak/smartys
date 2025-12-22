@@ -371,3 +371,10 @@ export const stokHareketleriRelations = relations(stokHareketleri, ({ one }) => 
     references: [faturalar.id],
   }),
 }));
+
+export const cariHareketlerRelations = relations(cariHareketler, ({ one }) => ({
+  company: one(companies, {
+    fields: [cariHareketler.companyId],
+    references: [companies.id],
+  }),
+}));

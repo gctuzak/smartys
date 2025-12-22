@@ -18,7 +18,8 @@ import {
   User,
   LogOut,
   Receipt,
-  Warehouse
+  Warehouse,
+  Wallet
 } from "lucide-react";
 
 const navigation = [
@@ -28,6 +29,7 @@ const navigation = [
   { name: "Teklifler", href: "/proposals", icon: FileText },
   { name: "Siparişler", href: "/orders", icon: ShoppingCart },
   { name: "Faturalar", href: "/muhasebe/faturalar", icon: Receipt },
+  { name: "Cari Hesaplar", href: "/muhasebe/cariler", icon: Wallet },
   { name: "Stok Durumu", href: "/muhasebe/stok", icon: Warehouse },
   { name: "Şirketler", href: "/companies", icon: Building2 },
   { name: "Kişiler", href: "/persons", icon: Users },
