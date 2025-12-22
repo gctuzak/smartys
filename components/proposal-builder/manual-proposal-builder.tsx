@@ -8,7 +8,7 @@ import { ParsedData } from "@/types";
 import { Search, Plus, ArrowRight, User, Building2, Check, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
-import { toTurkishLikePattern } from "@/lib/utils";
+import { toTurkishLikePattern, cn } from "@/lib/utils";
 import { parseCustomerTextAction } from "@/app/actions/parse-customer";
 import { createCompanyWithPersonAction, createPersonForCompanyAction } from "@/app/actions/create-customer";
 import { processCustomerAction } from "@/app/actions/process-customer";
