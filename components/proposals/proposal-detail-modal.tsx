@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { getProposalDetailsAction } from "@/app/actions/fetch-data";
+import { getProposalDetailsAction, getProposalRevisionsAction } from "@/app/actions/fetch-data";
+import { reviseProposalAction } from "@/app/actions/revise-proposal";
 import { uploadDocumentAction } from "@/app/actions/documents";
 import { updateProposalStatusAction } from "@/app/actions/update-proposal-status";
 import { generateProposalPDF } from "@/lib/generate-proposal-pdf";
 import { Modal } from "@/components/ui/modal";
-import { Loader2, Building2, User, MapPin, Phone, Mail, Calendar, Hash, Check, FileText, CreditCard, Printer, ListTodo, Pencil } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Loader2, Building2, User, MapPin, Phone, Mail, Calendar, Hash, Check, FileText, CreditCard, Printer, ListTodo, Pencil, GitBranch, History } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -41,6 +43,9 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate, ini
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [fileManagerKey, setFileManagerKey] = useState(0);
   const [isEditing, setIsEditing] = useState(initialIsEditing);
+  const [revisions, setRevisions] = useState<any[]>([]);
+  const [isRevising, setIsRevising] = useState(false);
+  const [internalProposalId, setInternalProposalId] = useState<string | null>(proposalId);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,6 +53,10 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate, ini
       setIsEditing(initialIsEditing);
     }
   }, [isOpen, initialIsEditing]);
+
+  useEffect(() => {
+    setInternalProposalId(proposalId);
+  }, [proposalId]);
 
   const getParsedData = (): ParsedData => {
     if (!data) return { 
@@ -118,9 +127,9 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate, ini
     setIsEditing(false);
     toast.success("Teklif güncellendi");
     // Refresh data
-    if (proposalId) {
+    if (internalProposalId) {
         setLoading(true);
-        getProposalDetailsAction(proposalId).then((result) => {
+        getProposalDetailsAction(internalProposalId).then((result) => {
             if (result.success) {
                 setData(result.data);
                 setSelectedStatus(result.data.status);
@@ -144,13 +153,19 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate, ini
   }, []);
 
   useEffect(() => {
-    if (isOpen && proposalId) {
+    if (isOpen && internalProposalId) {
       const fetchData = async () => {
         setLoading(true);
-        const result = await getProposalDetailsAction(proposalId);
+        const result = await getProposalDetailsAction(internalProposalId);
         if (result.success) {
           setData(result.data);
           setSelectedStatus(result.data.status);
+
+          // Fetch revisions
+          const revResult = await getProposalRevisionsAction(internalProposalId);
+          if (revResult.success) {
+            setRevisions(revResult.data);
+          }
         }
         setLoading(false);
       };
@@ -158,8 +173,9 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate, ini
     } else {
       setData(null);
       setSelectedStatus(null);
+      setRevisions([]);
     }
-  }, [isOpen, proposalId]);
+  }, [isOpen, internalProposalId]);
 
   const handleStatusChange = (newStatus: string) => {
     setSelectedStatus(newStatus);
@@ -223,6 +239,31 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate, ini
     }
   };
 
+  const handleRevise = async () => {
+    if (!internalProposalId) return;
+    if (!confirm("Bu teklifi revize etmek istediğinize emin misiniz? Tüm veriler yeni bir teklif olarak kopyalanacaktır.")) return;
+    
+    setIsRevising(true);
+    try {
+        const result = await reviseProposalAction(internalProposalId);
+        if (result.success) {
+            toast.success("Teklif revize edildi");
+            if (onUpdate) onUpdate(); // Refresh main list
+            
+            // Switch to new proposal
+            setInternalProposalId(result.data.id);
+        } else {
+            toast.error("Teklif revize edilemedi: " + result.error);
+        }
+    } catch (e) {
+        toast.error("Bir hata oluştu");
+    } finally {
+        setIsRevising(false);
+    }
+  };
+
+  const rootProposal = revisions.length > 0 ? revisions.find(r => r.revision === 0) : null;
+
   if (!isOpen) return null;
 
   if (isEditing && data) {
@@ -235,7 +276,7 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate, ini
                 originalFile={null} 
                 onSuccess={handleEditSuccess} 
                 isEditing={true}
-                proposalId={proposalId!}
+                proposalId={internalProposalId!}
                 onCancel={() => setIsEditing(false)}
             />
          </div>
@@ -250,7 +291,8 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate, ini
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         </div>
       ) : data ? (
-        <div className="space-y-8">
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex-1 space-y-8 min-w-0">
           {/* Header Section */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-50/50 p-4 rounded-xl border border-gray-100">
             <div>
@@ -260,7 +302,7 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate, ini
                 </div>
                 <div>
                    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                     Teklif #{data.proposal_no || "-"}
+                     Teklif #{rootProposal ? rootProposal.proposal_no : (data.proposal_no || "-")}{data.revision > 0 ? `-${data.revision}` : ""}
                      {data.legacy_proposal_no && (
                         <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-500 font-mono border">Ref: {data.legacy_proposal_no}</span>
                      )}
@@ -274,6 +316,70 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate, ini
             </div>
             
             <div className="mt-4 md:mt-0 flex items-center gap-3">
+              {revisions.length > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="bg-white hover:bg-gray-50 text-gray-700 border-gray-200 shadow-sm"
+                    >
+                      <History className="w-3 h-3 mr-2" />
+                      Geçmiş
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-0" align="end">
+                    <div className="bg-gray-50 p-3 border-b">
+                        <h4 className="font-semibold text-sm flex items-center gap-2">
+                            <GitBranch className="w-4 h-4" />
+                            Revizyon Geçmişi
+                        </h4>
+                    </div>
+                    <div className="p-2 max-h-[300px] overflow-y-auto space-y-1">
+                        {revisions.map((rev) => (
+                            <button 
+                                key={rev.id}
+                                onClick={() => setInternalProposalId(rev.id)}
+                                className={cn(
+                                    "w-full text-left px-3 py-2 rounded-md text-sm transition-all",
+                                    rev.id === internalProposalId 
+                                        ? "bg-blue-50 text-blue-700 font-medium border border-blue-100" 
+                                        : "hover:bg-gray-100 text-gray-700 border border-transparent"
+                                )}
+                            >
+                                <div className="flex justify-between items-center mb-1">
+                                    <span>
+                                        {rev.revision === 0 ? "Orijinal Teklif" : `Revizyon ${rev.revision}`}
+                                    </span>
+                                    {rev.id === internalProposalId && <Check className="w-3.5 h-3.5" />}
+                                </div>
+                                <div className="flex justify-between items-center text-xs text-gray-500">
+                                    <span>{new Date(rev.created_at).toLocaleDateString("tr-TR")}</span>
+                                    <span className={cn(
+                                        "px-1.5 py-0.5 rounded text-[10px]",
+                                        PROPOSAL_STATUSES.find(s => s.value === rev.status)?.color || 'bg-gray-100'
+                                    )}>
+                                        {PROPOSAL_STATUSES.find(s => s.value === rev.status)?.label || rev.status}
+                                    </span>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRevise}
+                disabled={isRevising}
+                className="bg-white hover:bg-gray-50 text-gray-700 border-gray-200 shadow-sm"
+              >
+                {isRevising ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <GitBranch className="w-3 h-3 mr-2" />}
+                Revize Et
+              </Button>
+
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -655,6 +761,7 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate, ini
              </div>
           </div>
 
+          </div>
         </div>
       ) : (
         <div className="text-center py-24 text-gray-500">

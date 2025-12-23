@@ -652,3 +652,32 @@ export async function getOrderDetailsAction(id: string) {
     return { success: false, error: "Sipariş detayları getirilemedi." };
   }
 }
+
+export async function getProposalRevisionsAction(proposalId: string) {
+  try {
+    // First get the proposal to find its root
+    const { data: proposal, error: fetchError } = await supabase
+      .from("proposals")
+      .select("id, root_proposal_id, proposal_no, revision")
+      .eq("id", proposalId)
+      .single();
+
+    if (fetchError || !proposal) throw new Error("Teklif bulunamadı");
+
+    const rootId = proposal.root_proposal_id || proposal.id;
+
+    // Fetch all proposals with this root (including the root itself)
+    const { data, error } = await supabase
+      .from("proposals")
+      .select("id, proposal_no, revision, created_at, status")
+      .or(`id.eq.${rootId},root_proposal_id.eq.${rootId}`)
+      .order("revision", { ascending: true });
+
+    if (error) throw error;
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Get Proposal Revisions Error:", error);
+    return { success: false, error: "Revizyon geçmişi getirilemedi." };
+  }
+}

@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, jsonb, timestamp, decimal, integer, serial, boolean } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, jsonb, timestamp, decimal, integer, serial, boolean, AnyPgColumn } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
@@ -84,6 +84,8 @@ export const proposals = pgTable("proposals", {
   notes: text("notes"), // For "Teklif Notları"
   paymentTerms: text("payment_terms"), // For "Ödeme"
   proposalDate: timestamp("proposal_date"), // For "Gönderim Tarihi"
+  revision: integer("revision").default(0),
+  rootProposalId: uuid("root_proposal_id").references((): AnyPgColumn => proposals.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
