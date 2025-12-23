@@ -151,7 +151,7 @@ export const generateProposalPDF = async (data: any) => {
   yPos = Math.max(yPos, rightY) + 10;
 
   // Items Table
-  const tableHeaders = [["Açıklama", "Özellikler", "Miktar", "Birim Fiyat", "Toplam"]];
+  const tableHeaders = [["Açıklama", "Detaylar", "Miktar", "Birim Fiyat", "Toplam"]];
 
   const tableData = data.items?.map((item: any) => {
     if (item.is_header) {
@@ -166,22 +166,32 @@ export const generateProposalPDF = async (data: any) => {
 
     // Format attributes
     let attrStr = "";
+    const parts = [];
+
+    // New dedicated fields
+    if (item.width && item.width > 0) parts.push(`En: ${item.width} cm`);
+    if (item.length && item.length > 0) parts.push(`Boy: ${item.length} cm`);
+    if (item.piece_count && item.piece_count > 0) parts.push(`Adet: ${item.piece_count}`);
+    if (item.kelvin && item.kelvin > 0) parts.push(`K: ${item.kelvin}`);
+    if (item.watt && item.watt > 0) parts.push(`Watt: ${item.watt}`);
+    if (item.lumen && item.lumen > 0) parts.push(`Lümen: ${item.lumen}`);
+
     if (item.attributes) {
-      const parts = [];
-      if (item.attributes.enCm || item.attributes.En || item.attributes.en)
+      // Legacy fallback
+      if (!item.width && (item.attributes.enCm || item.attributes.En || item.attributes.en))
         parts.push(`En: ${item.attributes.enCm || item.attributes.En || item.attributes.en}`);
-      if (item.attributes.boyCm || item.attributes.Boy || item.attributes.boy)
+      if (!item.length && (item.attributes.boyCm || item.attributes.Boy || item.attributes.boy))
         parts.push(`Boy: ${item.attributes.boyCm || item.attributes.Boy || item.attributes.boy}`);
-      if (item.attributes.adet || item.attributes.Adet)
+      if (!item.piece_count && (item.attributes.adet || item.attributes.Adet))
         parts.push(`Adet: ${item.attributes.adet || item.attributes.Adet}`);
 
       Object.entries(item.attributes).forEach(([key, value]) => {
-        if (!["en", "boy", "adet", "encm", "boycm"].includes(key.toLowerCase())) {
+        if (!["en", "boy", "adet", "encm", "boycm", "width", "length", "piececount", "kelvin", "watt", "lumen"].includes(key.toLowerCase())) {
           parts.push(`${key}: ${value}`);
         }
       });
-      attrStr = parts.join(", ");
     }
+    attrStr = parts.join(", ");
 
     return [
       item.description,

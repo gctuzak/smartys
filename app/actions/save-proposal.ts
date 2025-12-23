@@ -210,6 +210,12 @@ export async function saveProposalAction(data: ParsedData) {
         unit_price: item.unitPrice ?? null,
         total_price: item.totalPrice ?? null,
         attributes: item.attributes,
+        width: item.width ?? null,
+        length: item.length ?? null,
+        piece_count: item.pieceCount ?? null,
+        kelvin: item.kelvin ?? null,
+        watt: item.watt ?? null,
+        lumen: item.lumen ?? null,
         is_header: item.isHeader ?? false,
         order: index
       }));

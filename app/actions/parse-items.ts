@@ -26,20 +26,46 @@ export async function parseItemsTextAction(text: string) {
         {
           role: "system",
           content: `You are a data parser. The user will paste a list of items from Excel.
-          Extract the items into a JSON array.
-          Each item should have:
-          - description (Product name)
-          - quantity (number, default 1)
-          - unit (e.g. Adet, m2, kg)
-          - unitPrice (number, default 0)
-          - totalPrice (number, optional)
+          Extract the items into a JSON array with the key "items".
           
-          Detect columns intelligently.
-          Common patterns:
-          - Name | Qty | Unit | Unit Price | Total Price
-          - Name | Qty | Unit | Total Price (In this case, assume Unit Price = Total Price / Qty)
+          The source format is FIXED:
+          AÇIKLAMA | KELVİN | WATT | LÜMEN | EN (cm) | BOY (cm) | ADET | MİKTAR | BİRİM | FİYAT | TUTAR
           
-          If you see a column that looks like a total amount, map it to totalPrice.
+          Each item object MUST have these fields (use exact keys):
+          - description (string, Product name)
+          - quantity (number, default 1) -> MİKTAR
+          - unit (string, e.g. Adet, m2, kg) -> BİRİM
+          - unitPrice (number, default 0) -> FİYAT
+          - totalPrice (number, optional) -> TUTAR
+          - kelvin (number, optional integer) -> KELVİN
+          - watt (number, optional decimal) -> WATT
+          - lumen (number, optional integer) -> LÜMEN
+          - width (number, optional) -> EN (cm)
+          - length (number, optional) -> BOY (cm)
+          - pieceCount (number, optional) -> ADET (in specs)
+          
+          IMPORTANT:
+          - Detect empty cells and treat them as null/0.
+          - Convert Turkish number formats (1.250,50) to standard (1250.50).
+          
+          Example JSON Output:
+          {
+            "items": [
+              {
+                "description": "Product A",
+                "quantity": 10,
+                "unit": "Adet",
+                "unitPrice": 100,
+                "totalPrice": 1000,
+                "kelvin": 3000,
+                "watt": 10.5,
+                "lumen": 800,
+                "width": 100,
+                "length": 200,
+                "pieceCount": 1
+              }
+            ]
+          }
           `
         },
         {
@@ -72,12 +98,18 @@ export async function parseItemsTextAction(text: string) {
         // (User said: "Zaten sondaki değer toplamı ben veriyorum")
 
         return {
-            description: i.description || "Ürün",
+            description: i.description || i.Description || "Ürün",
             quantity,
             unit: i.unit || "Adet",
             unitPrice,
             totalPrice,
-            vatRate: 20
+            vatRate: 20,
+            kelvin: i.kelvin ? Math.round(Number(i.kelvin)) : undefined,
+            watt: Number(i.watt) || undefined,
+            lumen: i.lumen ? Math.round(Number(i.lumen)) : undefined,
+            width: Number(i.width) || undefined,
+            length: Number(i.length) || undefined,
+            pieceCount: Number(i.pieceCount) || undefined,
         };
     });
 

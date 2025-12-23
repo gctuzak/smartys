@@ -6,13 +6,15 @@ import { uploadDocumentAction } from "@/app/actions/documents";
 import { updateProposalStatusAction } from "@/app/actions/update-proposal-status";
 import { generateProposalPDF } from "@/lib/generate-proposal-pdf";
 import { Modal } from "@/components/ui/modal";
-import { Loader2, Building2, User, MapPin, Phone, Mail, Calendar, Hash, Check, FileText, CreditCard, Printer, ListTodo } from "lucide-react";
+import { Loader2, Building2, User, MapPin, Phone, Mail, Calendar, Hash, Check, FileText, CreditCard, Printer, ListTodo, Pencil } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ActivityTimeline } from "@/components/crm/activities/activity-timeline";
 import { FileManager } from "@/components/shared/file-manager";
+import { ProposalReview } from "@/components/proposal-builder/proposal-review";
+import { ParsedData } from "@/types";
 
 
 const PROPOSAL_STATUSES = [
@@ -27,9 +29,10 @@ interface ProposalDetailModalProps {
   onClose: () => void;
   proposalId: string | null;
   onUpdate?: () => void;
+  initialIsEditing?: boolean;
 }
 
-export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: ProposalDetailModalProps) {
+export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate, initialIsEditing = false }: ProposalDetailModalProps) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
@@ -37,7 +40,96 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [fileManagerKey, setFileManagerKey] = useState(0);
+  const [isEditing, setIsEditing] = useState(initialIsEditing);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsEditing(initialIsEditing);
+    }
+  }, [isOpen, initialIsEditing]);
+
+  const getParsedData = (): ParsedData => {
+    if (!data) return { 
+        company: { name: "", contactInfo: {} }, 
+        person: { name: "" }, 
+        proposal: { 
+            proposalDate: new Date().toISOString(), 
+            totalAmount: 0, 
+            vatRate: 20, 
+            vatAmount: 0, 
+            grandTotal: 0, 
+            currency: "EUR", 
+            items: [] 
+        } 
+    };
+
+    const contactInfo = data.company?.contact_info || {};
+    // Ensure contactInfo has fields we expect if they are empty in JSONB but present in columns
+    if (!contactInfo.email && data.company?.email1) contactInfo.email = data.company.email1;
+    if (!contactInfo.phone && data.company?.phone1) contactInfo.phone = data.company.phone1;
+    if (!contactInfo.address && data.company?.address) contactInfo.address = data.company.address;
+    if (!contactInfo.taxNo && data.company?.tax_no) contactInfo.taxNo = data.company.tax_no;
+    if (!contactInfo.taxOffice && data.company?.tax_office) contactInfo.taxOffice = data.company.tax_office;
+
+    return {
+      company: {
+        name: data.company?.name || "",
+        contactInfo: contactInfo,
+      },
+      person: {
+        name: data.person ? `${data.person.first_name} ${data.person.last_name}` : "",
+        email: data.person?.email1,
+        phone: data.person?.phone1,
+        title: data.person?.title,
+      },
+      proposal: {
+        legacyProposalNo: data.legacy_proposal_no,
+        proposalDate: data.proposal_date || data.created_at,
+        totalAmount: Number(data.total_amount),
+        vatRate: Number(data.vat_rate),
+        vatAmount: Number(data.vat_amount),
+        grandTotal: Number(data.grand_total),
+        currency: data.currency,
+        notes: data.notes,
+        paymentTerms: data.payment_terms,
+        items: data.items?.map((item: any) => ({
+          id: item.id,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: item.unit_price,
+          totalPrice: item.total_price,
+          isHeader: item.is_header,
+          attributes: item.attributes,
+          width: item.width || item.attributes?.["enCm"] || item.attributes?.["En"] || item.attributes?.["en"],
+          length: item.length || item.attributes?.["boyCm"] || item.attributes?.["Boy"] || item.attributes?.["boy"],
+          pieceCount: item.piece_count || item.attributes?.["adet"] || item.attributes?.["Adet"],
+          kelvin: item.kelvin || item.attributes?.["kelvin"] || item.attributes?.["Kelvin"],
+          watt: item.watt || item.attributes?.["watt"] || item.attributes?.["Watt"],
+          lumen: item.lumen || item.attributes?.["lumen"] || item.attributes?.["Lumen"],
+          order: item.order
+        })).sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)) || [],
+      },
+    };
+  };
+
+  const handleEditSuccess = () => {
+    setIsEditing(false);
+    toast.success("Teklif güncellendi");
+    // Refresh data
+    if (proposalId) {
+        setLoading(true);
+        getProposalDetailsAction(proposalId).then((result) => {
+            if (result.success) {
+                setData(result.data);
+                setSelectedStatus(result.data.status);
+            }
+            setLoading(false);
+        });
+    }
+    if (onUpdate) onUpdate();
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -133,6 +225,24 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
 
   if (!isOpen) return null;
 
+  if (isEditing && data) {
+    const initialData = getParsedData();
+    return (
+      <Modal isOpen={isOpen} onClose={() => { setIsEditing(false); }} title="Teklifi Düzenle" maxWidth="full">
+         <div className="p-4">
+            <ProposalReview 
+                initialData={initialData} 
+                originalFile={null} 
+                onSuccess={handleEditSuccess} 
+                isEditing={true}
+                proposalId={proposalId!}
+                onCancel={() => setIsEditing(false)}
+            />
+         </div>
+      </Modal>
+    );
+  }
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Teklif Detayları" maxWidth="5xl">
       {loading ? (
@@ -164,6 +274,16 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
             </div>
             
             <div className="mt-4 md:mt-0 flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsEditing(true)} 
+                className="bg-white hover:bg-gray-50 text-gray-700 border-gray-200 shadow-sm"
+              >
+                <Pencil className="w-3 h-3 mr-2" />
+                Düzenle
+              </Button>
+
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -335,14 +455,26 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
               <TableHeader>
                 <TableRow className="bg-gray-50 hover:bg-gray-50">
                   <TableHead className="w-[40%]">Açıklama</TableHead>
-                  <TableHead>Özellikler</TableHead>
+                  <TableHead>Detaylar</TableHead>
                   <TableHead className="text-right">Miktar</TableHead>
                   <TableHead className="text-right">Birim Fiyat</TableHead>
                   <TableHead className="text-right">Toplam</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.items?.map((item: any) => (
+                {data.items?.map((item: any) => {
+                  // Merge new columns with legacy attributes for display
+                  const displayItem = {
+                    ...item,
+                    width: item.width || item.attributes?.["enCm"] || item.attributes?.["En"] || item.attributes?.["en"] || 0,
+                    length: item.length || item.attributes?.["boyCm"] || item.attributes?.["Boy"] || item.attributes?.["boy"] || 0,
+                    pieceCount: item.piece_count || item.attributes?.["adet"] || item.attributes?.["Adet"] || 0,
+                    kelvin: item.kelvin || item.attributes?.["kelvin"] || item.attributes?.["Kelvin"] || 0,
+                    watt: item.watt || item.attributes?.["watt"] || item.attributes?.["Watt"] || 0,
+                    lumen: item.lumen || item.attributes?.["lumen"] || item.attributes?.["Lumen"] || 0,
+                  };
+
+                  return (
                   <TableRow key={item.id} className={item.is_header ? "bg-gray-100 font-semibold" : "hover:bg-gray-50/50"}>
                     {item.is_header ? (
                       <TableCell colSpan={5} className="py-3 text-gray-800 align-top">
@@ -355,31 +487,48 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
                         </TableCell>
                         <TableCell className="align-top">
                           <div className="flex flex-wrap gap-2">
-                            {/* En/Boy/Adet Badges */}
-                            {(item.attributes?.["enCm"] || item.attributes?.["En"] || item.attributes?.["en"]) && (
-                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                En: {item.attributes?.["enCm"] || item.attributes?.["En"] || item.attributes?.["en"]}
+                            {/* Dimensions (Blue) */}
+                            {displayItem.width > 0 && (
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                <span className="font-bold mr-1">EN:</span> {displayItem.width} cm
                               </span>
                             )}
-                            {(item.attributes?.["boyCm"] || item.attributes?.["Boy"] || item.attributes?.["boy"]) && (
-                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                Boy: {item.attributes?.["boyCm"] || item.attributes?.["Boy"] || item.attributes?.["boy"]}
+                            {displayItem.length > 0 && (
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                <span className="font-bold mr-1">BOY:</span> {displayItem.length} cm
                               </span>
                             )}
-                            {(item.attributes?.["adet"] || item.attributes?.["Adet"]) && (
-                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                Adet: {item.attributes?.["adet"] || item.attributes?.["Adet"]}
+                            {displayItem.pieceCount > 0 && (
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                <span className="font-bold mr-1">ADET:</span> {displayItem.pieceCount}
                               </span>
                             )}
 
-                            {/* Other Attributes */}
+                            {/* Technical Specs (Orange) */}
+                            {displayItem.kelvin > 0 && (
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-orange-50 text-orange-700 border border-orange-100">
+                                <span className="font-bold mr-1">K:</span> {displayItem.kelvin}
+                              </span>
+                            )}
+                            {displayItem.watt > 0 && (
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-orange-50 text-orange-700 border border-orange-100">
+                                <span className="font-bold mr-1">WATT:</span> {displayItem.watt}
+                              </span>
+                            )}
+                            {displayItem.lumen > 0 && (
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-orange-50 text-orange-700 border border-orange-100">
+                                <span className="font-bold mr-1">LÜMEN:</span> {displayItem.lumen}
+                              </span>
+                            )}
+
+                            {/* Legacy Attributes Fallback */}
                             {item.attributes &&
                               Object.entries(item.attributes)
-                                .filter(([key]) => !["en", "boy", "adet", "encm", "boycm"].includes(key.toLowerCase()))
+                                .filter(([key]) => !["en", "boy", "adet", "encm", "boycm", "width", "length", "piececount", "kelvin", "watt", "lumen"].includes(key.toLowerCase()))
                                 .map(([key, value]) => (
                                   <span
                                     key={key}
-                                    className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100"
+                                    className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800"
                                   >
                                     {key}: {value as any}
                                   </span>
@@ -398,7 +547,8 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate }: P
                       </>
                     )}
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

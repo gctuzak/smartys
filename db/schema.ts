@@ -96,6 +96,13 @@ export const proposalItems = pgTable("proposal_items", {
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }),
   totalPrice: decimal("total_price", { precision: 10, scale: 2 }),
   attributes: jsonb("attributes"),
+  // New optional fields
+  kelvin: integer("kelvin"),
+  watt: decimal("watt", { precision: 10, scale: 2 }),
+  lumen: integer("lumen"),
+  width: decimal("width", { precision: 10, scale: 2 }), // En
+  length: decimal("length", { precision: 10, scale: 2 }), // Boy
+  pieceCount: integer("piece_count"), // Adet
   isHeader: boolean("is_header").default(false),
   order: integer("order").default(0),
 });
@@ -371,6 +378,19 @@ export const stokHareketleriRelations = relations(stokHareketleri, ({ one }) => 
     references: [faturalar.id],
   }),
 }));
+
+export const cariHareketler = pgTable("cari_hareketler", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id").references(() => companies.id).notNull(),
+  tarih: timestamp("tarih").defaultNow().notNull(),
+  islemTuru: text("islem_turu").notNull(),
+  belgeNo: text("belge_no"),
+  aciklama: text("aciklama"),
+  borc: decimal("borc", { precision: 10, scale: 2 }).default("0"),
+  alacak: decimal("alacak", { precision: 10, scale: 2 }).default("0"),
+  bakiye: decimal("bakiye", { precision: 10, scale: 2 }).default("0"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 export const cariHareketlerRelations = relations(cariHareketler, ({ one }) => ({
   company: one(companies, {

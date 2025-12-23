@@ -10,6 +10,16 @@ const Num = z.preprocess((v) => {
   return v;
 }, z.number());
 
+const Int = z.preprocess((v) => {
+  if (typeof v === "string") {
+    const s = v.replace(/[^\d,.\-]/g, "").replace(/\./g, "").replace(",", ".");
+    const n = Number(s);
+    return isNaN(n) ? v : Math.round(n);
+  }
+  if (typeof v === "number") return Math.round(v);
+  return v;
+}, z.number().int());
+
 const ProposalSchema = z.object({
   company: z.object({
     name: z.string().nullable(),
@@ -38,6 +48,12 @@ const ProposalSchema = z.object({
         unit: z.string(),
         unitPrice: Num,
         totalPrice: Num,
+        kelvin: Int.optional(),
+        watt: Num.optional(),
+        lumen: Int.optional(),
+        width: Num.optional(),
+        length: Num.optional(),
+        pieceCount: Int.optional(),
         attributes: z.record(z.string(), z.unknown()).optional(),
       })
     ),
@@ -75,56 +91,51 @@ export async function parseProposalText(text: string, opts?: { forceAI?: boolean
           role: "system",
           content:
             [
-              "Uzman bir veri analistisin. Sana Excel'den çekilmiş ham metin verilecek. Bu metin '|' karakteri ile ayrılmış sütunlardan oluşur.",
-            "",
-            "GÖREVLERİN:",
-            "1. Müşteri/Şirket ve İlgili Kişi Bilgilerini Bul:",
-            "   - 'Sayın', 'Müşteri', 'Firma', 'Alıcı', 'Teklif Verilen' gibi anahtar kelimelere dikkat et.",
-            "   - Şirket Adı (Tüzel Kişilik) ile Kişi Adını (İlgili Şahıs) birbirinden AYIR.",
-            "   - Şirket adları genellikle 'A.Ş.', 'Ltd. Şti.', 'Yapı', 'Mimarlık', 'Mühendislik', 'Ticaret', 'Sanayi' gibi ekler içerir.",
-            "   - Kişi adları genellikle 'Ad Soyad' formatındadır ve unvan içerebilir.",
-            "   - Örnek: 'Sayın Ahmet Yılmaz - ABC Yapı A.Ş.' ise -> Person: Ahmet Yılmaz, Company: ABC Yapı A.Ş.",
-            "   - Sadece kişi varsa Company null olabilir. Sadece şirket varsa Person null olabilir.",
-            "   - İletişim bilgilerini (Tel, E-posta, Adres) ilgili alana koy.",
-            "   - ÖZEL DURUM (Tablo Başlıkları): Metin içinde 'Adı', 'Şirket', 'Proje' gibi etiketlerin hemen yanında veya altındaki değerleri eşleştir:",
-            "     * 'Adı' -> Person Name (örn: 'Adı Arif Üzgün')",
-            "     * 'Şirket' -> Company Name (örn: 'Şirket Acıbadem Proje Yönetimi')",
-            "     * 'Proje' -> Project Name (örn: 'Proje Acıbadem Maslak Hastanesi')",
-            "     * Bu format genellikle satır başlarında 'Etiket Değer' veya 'Etiket | Değer' şeklinde görünür.",
-            "",
-            "2. Proje Bilgisini Bul:",
-            "   - 'Proje:', 'Project:', 'Konu:', 'İşin Adı:', 'İş Tanımı:', 'Ref:' gibi ifadeleri ara.",
-            "   - Bu bilgiyi company.contactInfo.project alanına yaz.",
-            "",
-            "3. Teklif Kalemlerini (Tabloyu) Bul:",
-            "   - Tablo başlıkları DAİMA 'AÇIKLAMA', 'FİYAT' ve 'TUTAR' sütunlarını içerir.",
-            "   - Bu başlıkların (header) ALTINDAKİ satırlar teklif kalemleridir.",
-            "   - GEÇERLİ KALEM KURALI: Bir satırın kalem olması için 'Fiyat' (Unit Price) ve 'Tutar' (Total Price) alanlarının BOŞ OLMAMASI (0'dan büyük olması) gerekir.",
-            "   - Eğer Fiyat veya Tutar boşsa, o satırı yoksay (ignore).",
-            "   - Genellikle: Sol tarafta metin (Açıklama), sağ tarafta sayılar (Miktar, Fiyat, Tutar) bulunur.",
-            "   - EN / BOY / ADET Ayrıştırma:",
-            "     * Eğer ayrı sütunlarda (En, Boy, Adet) varsa bunları al.",
-            "     * Eğer yoksa, Açıklama sütununda '100x200', '100*200', '100 x 200 cm' gibi ölçüler ara ve bunları En=100, Boy=200 olarak ayıkla.",
-            "     * attributes: { enCm: number, boyCm: number, adet: number } formatında ekle.",
-            "",
-            "4. Sayısal Değerler:",
-            "   - Para birimini (TRY, USD, EUR, GBP) sembollerden veya metinden tespit et.",
-            "   - '$' görürsen 'USD', '€' görürsen 'EUR', '£' görürsen 'GBP', 'TL' veya '₺' görürsen 'TRY' olarak belirle.",
-            "   - JSON çıktısında sayıları STRING değil, NUMBER (tırnaksız) olarak ver. (Örn: 1250.50).",
-            "   - Türkçe format (1.250,50) veya İngilizce format (1,250.50) olabilir, sen bunu standart sayıya çevir.",
-            "",
-            "5. Başlık/Seperatör Satırları:",
-            "   - Tablo başlıkları (Description, Qty, Price vb.) hariç, ara başlıkları veya ayırıcı satırları İÇERİ ALMA (ignore et).",
-            "   - Sadece ürün/hizmet kalemlerini listele.",
-            "",
-            "ÇIKTI FORMATI (JSON):",
-            "  {",
-            '  "company": { "name": "...", "contactInfo": { ... } },',
-            '  "person": { "name": "...", "email": "...", "phone": "...", "title": "..." },',
-            '  "proposal": { "currency": "EUR", "totalAmount": 0, "items": [',
-            '    { "description": "...", "quantity": 0, "unit": "...", "unitPrice": 0, "totalPrice": 0, "attributes": { "enCm": 0, "boyCm": 0, "adet": 0 } }',
-            "  ]}",
-            "}"
+              "Uzman bir veri analistisin. Sana belirli bir formatta Excel metni verilecek.",
+              "FORMAT YAPISI:",
+              "1. Üst Kısım (Müşteri Bilgileri) - İlk 7-8 satır:",
+              "   - Adı Soyadı | [Değer]",
+              "   - Kişi Telefonu | [Değer]",
+              "   - email | [Değer]",
+              "   - Görevi | [Değer]",
+              "   - Şirket | [Değer]",
+              "   - Proje | [Değer]",
+              "   - Şirket Telefonu | [Değer]",
+              "",
+              "2. Alt Kısım (Teklif Tablosu):",
+              "   - Başlık satırı: AÇIKLAMA | KELVİN | WATT | LÜMEN | EN (cm) | BOY (cm) | ADET | MİKTAR | BİRİM | FİYAT | TUTAR",
+              "   - Bu sıraya göre sütunları eşleştir.",
+              "",
+              "GÖREVLERİN:",
+              "1. Müşteri/Proje Bilgilerini Çıkar:",
+              "   - 'Adı Soyadı' -> person.name",
+              "   - 'Kişi Telefonu' -> person.phone",
+              "   - 'email' -> person.email",
+              "   - 'Görevi' -> person.title",
+              "   - 'Şirket' -> company.name",
+              "   - 'Proje' -> company.contactInfo.project",
+              "   - 'Şirket Telefonu' -> company.contactInfo.phone",
+              "",
+              "2. Tablo Kalemlerini Çıkar:",
+              "   - Her satırda soldan sağa şu sırayı bekle: Açıklama, Kelvin, Watt, Lümen, En, Boy, Parça Adedi (Adet), Miktar, Birim, Birim Fiyat, Tutar.",
+              "   - 'ADET' sütunu teknik özellik olan parça sayısıdır (pieceCount).",
+              "   - 'MİKTAR' sütunu ise toplam sipariş miktarıdır (quantity).",
+              "   - Boş hücreleri 0 veya null kabul et.",
+              "   - Kelvin, Watt, Lümen değerlerini ilgili alanlara sayı olarak ata.",
+              "   - En ve Boy değerlerini width/length olarak ata.",
+              "",
+              "3. Sayısal Değerler:",
+              "   - Türkçe sayı formatını (1.250,50) düzelt (1250.5).",
+              "   - Para birimini satır içindeki sembollerden veya metinden algıla (varsayılan: EUR).",
+              "",
+              "ÇIKTI FORMATI (JSON):",
+              "  {",
+              '  "company": { "name": "...", "contactInfo": { ... } },',
+              '  "person": { "name": "...", "email": "...", "phone": "...", "title": "..." },',
+              '  "proposal": { "currency": "EUR", "totalAmount": 0, "items": [',
+              '    { "description": "...", "quantity": 0, "unit": "...", "unitPrice": 0, "totalPrice": 0, "kelvin": 0, "watt": 0, "lumen": 0, "width": 0, "length": 0, "pieceCount": 0 }',
+              "  ]}",
+              "}"
             ].join("\n"),
         },
         {
@@ -156,22 +167,18 @@ export async function parseProposalText(text: string, opts?: { forceAI?: boolean
       const price = toNum(i.unitPrice);
       const total = i.totalPrice !== undefined ? toNum(i.totalPrice) : qty * price;
       
-      const attrs = i.attributes || {};
-      const en = toNum((attrs as Record<string, unknown>).enCm);
-      const boy = toNum((attrs as Record<string, unknown>).boyCm);
-      const adet = toNum((attrs as Record<string, unknown>).adet);
-
-      const nextAttrs: Record<string, unknown> = { ...attrs };
-      if (en) nextAttrs.enCm = en;
-      if (boy) nextAttrs.boyCm = boy;
-      if (adet) nextAttrs.adet = adet;
+      const width = i.width !== undefined ? toNum(i.width) : undefined;
+      const length = i.length !== undefined ? toNum(i.length) : undefined;
+      const pieceCount = i.pieceCount !== undefined ? toNum(i.pieceCount) : undefined;
 
       return {
         ...i,
         quantity: qty,
         unitPrice: price,
         totalPrice: total,
-        attributes: nextAttrs,
+        width,
+        length,
+        pieceCount,
       };
     });
 

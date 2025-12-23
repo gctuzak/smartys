@@ -12,11 +12,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { saveProposalAction } from "@/app/actions/save-proposal";
+import { updateProposalAction } from "@/app/actions/update-proposal";
 import { toast } from "sonner";
-import { Loader2, Save, Plus, FileSpreadsheet, GripVertical } from "lucide-react";
+import { Loader2, Save, Plus, FileSpreadsheet, GripVertical, Settings2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ProductAutocomplete } from "./product-autocomplete";
 import { ProductSearchResult } from "@/app/actions/search-products";
+import { EntityVerificationModal } from "./entity-verification-modal";
 import {
   DndContext,
   closestCenter,
@@ -39,12 +42,140 @@ interface ProposalReviewProps {
   initialData: ParsedData;
   originalFile: File | null;
   onSuccess: () => void;
+  isEditing?: boolean;
+  proposalId?: string;
+  onCancel?: () => void;
 }
 
 interface SortableRowProps {
   id: string;
   children: React.ReactNode;
   className?: string;
+}
+
+interface SpecsCellProps {
+  item: any;
+  index: number;
+  handleSpecChange: (index: number, key: "kelvin" | "watt" | "lumen", value: number) => void;
+  handleDimensionChange: (index: number, key: "width" | "length" | "pieceCount", value: number) => void;
+}
+
+function SpecsCell({ item, index, handleSpecChange, handleDimensionChange }: SpecsCellProps) {
+  const [forceVisible, setForceVisible] = useState<string[]>([]);
+
+  const specs = [
+    { key: "width", label: "EN", type: "dim", suffix: "cm" },
+    { key: "length", label: "BOY", type: "dim", suffix: "cm" },
+    { key: "pieceCount", label: "ADET", type: "dim", suffix: "" },
+    { key: "kelvin", label: "K", type: "spec", suffix: "" },
+    { key: "watt", label: "WATT", type: "spec", suffix: "" },
+    { key: "lumen", label: "LÜMEN", type: "spec", suffix: "" },
+  ] as const;
+
+  const isVisible = (key: string, val: number | undefined | null) => {
+    return (val && val > 0) || forceVisible.includes(key);
+  };
+
+  const visibleSpecs = specs.filter((s) => isVisible(s.key, item[s.key]));
+  const hiddenSpecs = specs.filter((s) => !isVisible(s.key, item[s.key]));
+
+  const handleFocus = (key: string) => {
+    if (!forceVisible.includes(key)) {
+      setForceVisible((prev) => [...prev, key]);
+    }
+  };
+
+  const handleBlur = (key: string, val: number) => {
+    if (!val || val === 0) {
+      setForceVisible((prev) => prev.filter((k) => k !== key));
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap gap-2 items-center min-h-[32px]">
+      {visibleSpecs.map((spec) => (
+        <div
+          key={spec.key}
+          className={`flex items-center border rounded px-2 h-7 transition-all animate-in fade-in zoom-in-95 duration-200 ${
+            spec.type === "dim"
+              ? "bg-blue-50/50 border-blue-100 hover:border-blue-300"
+              : "bg-orange-50/50 border-orange-100 hover:border-orange-300"
+          }`}
+        >
+          <span
+            className={`text-[10px] font-bold uppercase mr-1.5 ${
+              spec.type === "dim" ? "text-blue-600" : "text-orange-600"
+            }`}
+          >
+            {spec.label}
+          </span>
+          <input
+            type="number"
+            value={item[spec.key] ?? ""}
+            onFocus={() => handleFocus(spec.key)}
+            onBlur={(e) => handleBlur(spec.key, parseFloat(e.target.value) || 0)}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value);
+              const numVal = isNaN(val) ? 0 : val;
+              if (spec.type === "dim") {
+                handleDimensionChange(index, spec.key as any, numVal);
+              } else {
+                handleSpecChange(index, spec.key as any, numVal);
+              }
+            }}
+            className="w-12 bg-transparent text-xs font-medium text-gray-700 focus:outline-none placeholder:text-gray-300 text-center"
+            placeholder="-"
+          />
+        </div>
+      ))}
+
+      {hiddenSpecs.length > 0 && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 rounded-full border border-dashed border-gray-300 text-gray-400 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-1" align="start">
+            <div className="text-[10px] font-semibold text-gray-400 px-2 py-1.5 uppercase tracking-wider">
+              Özellik Ekle
+            </div>
+            <div className="grid grid-cols-1 gap-0.5">
+              {hiddenSpecs.map((spec) => (
+                <button
+                  key={spec.key}
+                  onClick={() => {
+                    setForceVisible((prev) => [...prev, spec.key]);
+                  }}
+                  className="flex items-center w-full px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded-sm text-left group transition-colors"
+                >
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${
+                    spec.type === "dim" ? "bg-blue-100 text-blue-600" : "bg-orange-100 text-orange-600"
+                  }`}>
+                    <Plus className="w-3 h-3" />
+                  </div>
+                  <span
+                    className={`font-semibold mr-auto ${
+                      spec.type === "dim" ? "text-blue-600" : "text-orange-600"
+                    }`}
+                  >
+                    {spec.label}
+                  </span>
+                  <span className="text-[10px] text-gray-400 uppercase">
+                    {spec.type === "dim" ? "Boyut" : "Teknik"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+    </div>
+  );
 }
 
 function SortableRow({ id, children, className }: SortableRowProps) {
@@ -84,12 +215,12 @@ function SortableRow({ id, children, className }: SortableRowProps) {
   );
 }
 
-export function ProposalReview({ initialData, originalFile, onSuccess }: ProposalReviewProps) {
+export function ProposalReview({ initialData, originalFile, onSuccess, isEditing, proposalId, onCancel }: ProposalReviewProps) {
   const [data, setData] = useState<ParsedData>(() => {
     // Ensure all items have an ID for drag and drop
     const itemsWithIds = initialData.proposal.items.map(item => ({
       ...item,
-      id: item.id || crypto.randomUUID()
+      id: item.id || Math.random().toString(36).substring(2, 15)
     }));
     
     return {
@@ -225,15 +356,35 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
     }));
   };
 
-  const handleAttrChange = (index: number, key: "enCm" | "boyCm" | "adet", value: number) => {
+  const handleSpecChange = (index: number, key: "kelvin" | "watt" | "lumen", value: number) => {
     const newItems = [...data.proposal.items];
-    const attrs: Record<string, unknown> = { ...(newItems[index].attributes || {}) };
-    attrs[key] = value;
+    newItems[index] = {
+      ...newItems[index],
+      [key]: value
+    };
+    
+    setData((prev) => ({
+      ...prev,
+      proposal: {
+        ...prev.proposal,
+        items: newItems
+      }
+    }));
+  };
+
+  const handleDimensionChange = (index: number, key: "width" | "length" | "pieceCount", value: number) => {
+    const newItems = [...data.proposal.items];
+    
+    // Update the specific field
+    newItems[index] = {
+      ...newItems[index],
+      [key]: value
+    };
     
     // Otomatik Miktar Hesaplama (m2 veya mt)
-    const en = key === 'enCm' ? value : Number(attrs.enCm) || 0;
-    const boy = key === 'boyCm' ? value : Number(attrs.boyCm) || 0;
-    const adet = key === 'adet' ? value : Number(attrs.adet) || 0;
+    const en = key === 'width' ? value : Number(newItems[index].width) || 0;
+    const boy = key === 'length' ? value : Number(newItems[index].length) || 0;
+    const adet = key === 'pieceCount' ? value : Number(newItems[index].pieceCount) || 0;
 
     let newQuantity = newItems[index].quantity;
 
@@ -261,14 +412,13 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
           newItems[index].unit = 'm²';
         }
       }
-    } else if (key === 'adet' && adet > 0 && en === 0 && boy === 0) {
+    } else if (key === 'pieceCount' && adet > 0 && en === 0 && boy === 0) {
       // Sadece adet değiştiyse ve boyut yoksa miktarı adete eşitle
       newQuantity = adet;
     }
 
     newItems[index] = { 
       ...newItems[index], 
-      attributes: attrs,
       quantity: newQuantity
     };
 
@@ -304,7 +454,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
         items: [
           ...prev.proposal.items,
           {
-            id: crypto.randomUUID(),
+            id: Math.random().toString(36).substring(2, 15),
             description: "",
             quantity: 1,
             unit: "adet",
@@ -325,7 +475,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
         items: [
           ...prev.proposal.items,
           {
-            id: crypto.randomUUID(),
+            id: Math.random().toString(36).substring(2, 15),
             description: "",
             quantity: undefined,
             unit: "",
@@ -340,6 +490,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
   };
 
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
+  const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [pastedItems, setPastedItems] = useState("");
   const [isParsing, setIsParsing] = useState(false);
   
@@ -354,7 +505,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
       if (result.success && result.data) {
         const newItems = result.data.map((item: any) => ({
           ...item,
-          id: crypto.randomUUID(),
+          id: Math.random().toString(36).substring(2, 15),
           isHeader: false,
         }));
         
@@ -391,9 +542,15 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const result = await saveProposalAction(data);
+      let result: { success: boolean; proposalId?: string; error?: string; companyId?: string | null; personId?: string | null };
+      if (isEditing && proposalId) {
+        result = await updateProposalAction(proposalId, data);
+      } else {
+        result = await saveProposalAction(data);
+      }
+
       if (result.success) {
-        if (originalFile) {
+        if (originalFile && !isEditing && result.proposalId) {
           const formData = new FormData();
           formData.append("file", originalFile);
           formData.append("type", "excel");
@@ -409,11 +566,11 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
             toast.error("Excel dokümanı yüklenemedi");
           }
         }
-        toast.success("Teklif başarıyla kaydedildi!");
+        toast.success(isEditing ? "Teklif güncellendi!" : "Teklif başarıyla kaydedildi!");
         onSuccess();
       } else {
         // Type narrowing for the error case
-        const errorMsg = "error" in result ? (result as { error: string }).error : "Kaydetme başarısız oldu.";
+        const errorMsg = "error" in result ? (result as { error: string }).error : "İşlem başarısız oldu.";
         toast.error(errorMsg);
       }
     } catch {
@@ -443,7 +600,13 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
   }, []);
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1400px] mx-auto pb-20">
+      <EntityVerificationModal 
+        isOpen={isVerificationOpen} 
+        onClose={() => setIsVerificationOpen(false)} 
+        data={data}
+        onDataUpdate={setData}
+      />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Customer Info Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -625,14 +788,12 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
               <TableHeader className="bg-gray-50/50">
                 <TableRow className="border-b border-gray-100 hover:bg-gray-50/50">
                   <TableHead className="w-[50px]"></TableHead>
-                  <TableHead className="w-[35%] font-semibold text-gray-600">Açıklama</TableHead>
-                  <TableHead className="font-semibold text-gray-600 text-center w-[100px]">EN (cm)</TableHead>
-                  <TableHead className="font-semibold text-gray-600 text-center w-[100px]">BOY (cm)</TableHead>
-                  <TableHead className="font-semibold text-gray-600 text-center w-[80px]">Adet</TableHead>
-                  <TableHead className="font-semibold text-gray-600 text-center w-[100px]">Miktar</TableHead>
-                  <TableHead className="font-semibold text-gray-600 w-[80px]">Birim</TableHead>
-                  <TableHead className="font-semibold text-gray-600 w-[120px]">Birim Fiyat</TableHead>
-                  <TableHead className="text-right font-semibold text-gray-600 w-[120px]">Toplam</TableHead>
+                  <TableHead className="w-[25%] font-semibold text-gray-600">Açıklama</TableHead>
+                  <TableHead className="font-semibold text-gray-600 w-[30%]">Detaylar</TableHead>
+                  <TableHead className="font-semibold text-gray-600 text-center w-[80px]">Miktar</TableHead>
+                  <TableHead className="font-semibold text-gray-600 w-[70px]">Birim</TableHead>
+                  <TableHead className="font-semibold text-gray-600 w-[100px]">Birim Fiyat</TableHead>
+                  <TableHead className="text-right font-semibold text-gray-600 w-[100px]">Toplam</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -640,7 +801,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
                   {data.proposal.items.map((item, index) => (
                     <SortableRow key={item.id || index} id={item.id || ''} className={`group transition-colors ${item.isHeader ? "bg-gray-50/80 hover:bg-gray-100" : "hover:bg-blue-50/30"}`}>
                       {item.isHeader ? (
-                        <TableCell colSpan={9} className="py-3">
+                        <TableCell colSpan={7} className="py-3">
                           <div className="flex items-center gap-3 px-2">
                             <Input
                               value={item.description}
@@ -664,7 +825,7 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
                         </TableCell>
                       ) : (
                         <>
-                          <TableCell className="py-2">
+                          <TableCell className="py-2 align-top">
                             <ProductAutocomplete
                               value={item.description}
                               onChange={(val) => handleItemChange(index, "description", val)}
@@ -672,31 +833,15 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
                               className="w-full border-transparent bg-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-500 transition-all rounded-md h-9"
                             />
                           </TableCell>
-                          <TableCell className="p-1">
-                            <Input
-                              type="number"
-                              value={(item.attributes?.enCm as number) || 0}
-                              onChange={(e) => handleAttrChange(index, "enCm", Number(e.target.value))}
-                              className="w-full text-center border-transparent bg-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-500 transition-all rounded-md h-9 px-1"
-                            />
+                          <TableCell className="py-2 align-top">
+                             <SpecsCell 
+                                item={item} 
+                                index={index} 
+                                handleSpecChange={handleSpecChange} 
+                                handleDimensionChange={handleDimensionChange} 
+                             />
                           </TableCell>
-                          <TableCell className="p-1">
-                            <Input
-                              type="number"
-                              value={(item.attributes?.boyCm as number) || 0}
-                              onChange={(e) => handleAttrChange(index, "boyCm", Number(e.target.value))}
-                              className="w-full text-center border-transparent bg-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-500 transition-all rounded-md h-9 px-1"
-                            />
-                          </TableCell>
-                          <TableCell className="p-1">
-                            <Input
-                              type="number"
-                              value={(item.attributes?.adet as number) || 0}
-                              onChange={(e) => handleAttrChange(index, "adet", Number(e.target.value))}
-                              className="w-full text-center border-transparent bg-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-500 transition-all rounded-md h-9 px-1"
-                            />
-                          </TableCell>
-                          <TableCell className="p-1">
+                          <TableCell className="p-1 align-top pt-3">
                             <Input
                               type="number"
                               value={item.quantity ?? 0}
@@ -704,14 +849,14 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
                               className="w-full text-center font-medium text-gray-900 border-transparent bg-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-500 transition-all rounded-md h-9 px-1"
                             />
                           </TableCell>
-                          <TableCell className="p-1">
+                          <TableCell className="p-1 align-top pt-3">
                             <Input
                               value={item.unit}
                               onChange={(e) => handleItemChange(index, "unit", e.target.value)}
                               className="w-full border-transparent bg-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-500 transition-all rounded-md h-9 px-2"
                             />
                           </TableCell>
-                          <TableCell className="p-1">
+                          <TableCell className="p-1 align-top pt-3">
                             <Input
                               type="number"
                               value={item.unitPrice ?? 0}
@@ -719,10 +864,10 @@ export function ProposalReview({ initialData, originalFile, onSuccess }: Proposa
                               className="w-full border-transparent bg-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-500 transition-all rounded-md h-9 px-2"
                             />
                           </TableCell>
-                          <TableCell className="text-right font-bold text-gray-900 py-2 pr-4">
+                          <TableCell className="text-right font-bold text-gray-900 py-2 pr-4 align-top pt-4">
                             {(item.totalPrice ?? 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })}
                           </TableCell>
-                          <TableCell className="w-[40px] p-0 text-center">
+                          <TableCell className="w-[40px] p-0 text-center align-top pt-3">
                             <Button
                               variant="ghost"
                               size="icon"

@@ -5,7 +5,7 @@ import { getProposalsAction, deleteProposalAction } from "@/app/actions/fetch-da
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Trash2, Loader2, FileText, Eye, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, Trash2, Loader2, FileText, Eye, ArrowUpDown, ArrowUp, ArrowDown, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -26,6 +26,7 @@ export default function ProposalsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [initialIsEditing, setInitialIsEditing] = useState(false);
   const [sortField, setSortField] = useState("proposal_no");
   const [sortOrder, setSortOrder] = useState("desc");
 
@@ -68,6 +69,13 @@ export default function ProposalsPage() {
 
   const handleViewDetails = (id: string) => {
     setSelectedProposalId(id);
+    setInitialIsEditing(false);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleEdit = (id: string) => {
+    setSelectedProposalId(id);
+    setInitialIsEditing(true);
     setIsDetailModalOpen(true);
   };
 
@@ -198,15 +206,17 @@ export default function ProposalsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {/* 
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(proposal.id);
+                          }}
                           className="h-8 w-8 text-gray-500 hover:text-blue-600"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Pencil className="h-4 w-4" />
                         </Button>
-                        */}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -252,9 +262,13 @@ export default function ProposalsPage() {
 
       <ProposalDetailModal
         isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setInitialIsEditing(false);
+        }}
         proposalId={selectedProposalId}
         onUpdate={fetchProposals}
+        initialIsEditing={initialIsEditing}
       />
     </div>
   );

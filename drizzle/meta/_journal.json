@@ -71,6 +71,20 @@
       "when": 1766061423867,
       "tag": "0009_huge_shotgun",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1766488899459,
+      "tag": "0010_open_bug",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1766495330637,
+      "tag": "0011_fine_betty_brant",
+      "breakpoints": true
     }
   ]
 }

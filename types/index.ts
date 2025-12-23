@@ -31,6 +31,12 @@ export interface ProposalItem {
   unitPrice?: number;
   totalPrice?: number;
   attributes?: Record<string, unknown>;
+  kelvin?: string;
+  watt?: string;
+  lumen?: string;
+  width?: number;
+  length?: number;
+  pieceCount?: number;
   isHeader?: boolean;
   order?: number;
 }
@@ -87,6 +93,12 @@ export interface ParsedData {
       unitPrice?: number;
       totalPrice?: number;
       attributes?: Record<string, unknown>;
+      kelvin?: string;
+      watt?: string;
+      lumen?: string;
+      width?: number;
+      length?: number;
+      pieceCount?: number;
       isHeader?: boolean;
       order?: number;
     }[];
