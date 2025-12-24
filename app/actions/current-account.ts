@@ -14,47 +14,12 @@ export interface AddTransactionParams {
   aciklama?: string;
   tutar: number; // Frontend sends positive amount
   tarih: string;
+  order_id?: string;
+  fatura_id?: string;
 }
 
 export async function addTransactionAction(params: AddTransactionParams) {
   try {
-    // Determine Borç/Alacak based on type
-    // TAHSILAT (Collection) -> Reduces Customer Debt -> Alacak
-    // ODEME (Payment) -> We pay to supplier (or refund) -> Borç (if we view it as reducing our debt to them)
-    // Actually, let's standardize:
-    // Company is usually a Customer in this CRM context?
-    // If Customer:
-    // - Sale Invoice -> Borç (Debt increases)
-    // - Collection -> Alacak (Debt decreases)
-    // If Supplier:
-    // - Purchase Invoice -> Alacak (Our debt increases)
-    // - Payment -> Borç (Our debt decreases)
-    
-    // For simplicity, we assume "Borç" increases the balance (receivable), "Alacak" decreases it.
-    // TAHSILAT -> Alacak
-    // ODEME -> Borç (Refund or payment to us? Or payment TO them?)
-    // "Tahsilat" = We received money. Customer debt decreases. -> Alacak.
-    // "Ödeme" = We paid money. 
-    //   If to Supplier: Supplier balance (Credit) decreases. -> Borç.
-    //   If to Customer (Refund): Customer debt decreases? No, we pay them, so they owe us less? Or we owe them?
-    // Let's assume standard "Cari" logic:
-    // Borç = Debit (Money leaving us / They owe us)
-    // Alacak = Credit (Money coming to us / We owe them)
-    
-    // Wait, Standard Accounting:
-    // Asset (Cash) increases -> Debit.
-    // Customer Account (Asset) increases -> Debit. (Sale)
-    // Customer Account decreases -> Credit. (Collection)
-    
-    // So:
-    // TAHSILAT -> Alacak (Credit)
-    // ODEME -> Borç (Debit) - assuming we are paying a supplier or refunding.
-    // But if we are paying a supplier, the supplier account is a Liability.
-    // Liability decreases -> Debit.
-    
-    // So "Ödeme" (Payment Out) is always DEBIT (Borç) to the Current Account.
-    // "Tahsilat" (Collection In) is always CREDIT (Alacak) to the Current Account.
-    
     let borc = 0;
     let alacak = 0;
 
@@ -63,13 +28,6 @@ export async function addTransactionAction(params: AddTransactionParams) {
     } else if (params.islem_turu === "ODEME") {
       borc = params.tutar;
     } else if (params.islem_turu === "ACILIS_BAKIYESI") {
-        // Depends on positive/negative, but usually user enters "Borç Bakiyesi" or "Alacak Bakiyesi".
-        // For now, let's assume positive input means Debt (Borç).
-        // To support both, UI should ask "Borç mu Alacak mı?".
-        // For simplicity here, let's say "ACILIS_BAKIYESI" adds to Borç (They owe us).
-        // If we want Alacak, we might need a flag.
-        // Let's assume the user handles sign in "tutar" or we treat it as Debt.
-        // Actually, let's stick to TAHSILAT/ODEME for now.
         borc = params.tutar;
     }
 
@@ -80,13 +38,18 @@ export async function addTransactionAction(params: AddTransactionParams) {
       p_aciklama: params.aciklama || "",
       p_borc: borc,
       p_alacak: alacak,
-      p_tarih: params.tarih
+      p_tarih: params.tarih,
+      p_order_id: params.order_id || null,
+      p_fatura_id: params.fatura_id || null
     });
 
     if (error) throw error;
 
     revalidatePath(`/muhasebe/cariler/${params.company_id}`);
     revalidatePath("/companies");
+    if (params.fatura_id) {
+        revalidatePath("/muhasebe/faturalar");
+    }
     
     return { success: true };
   } catch (error: any) {
@@ -102,7 +65,11 @@ export async function getCompanyTransactionsAction(companyId: string, page = 1, 
 
     const { data, count, error } = await supabase
       .from("cari_hareketler")
-      .select("*", { count: "exact" })
+      .select(`
+        *,
+        order:orders (order_no),
+        fatura:faturalar (fatura_no)
+      `, { count: "exact" })
       .eq("company_id", companyId)
       .order("tarih", { ascending: false }) // Newest first
       .range(from, to);
@@ -113,4 +80,19 @@ export async function getCompanyTransactionsAction(companyId: string, page = 1, 
   } catch (error: any) {
     return { success: false, error: error.message };
   }
+}
+
+export async function getCompanyOrdersAction(companyId: string) {
+    try {
+        const { data, error } = await supabase
+            .from("orders")
+            .select("id, order_no, amount, status")
+            .eq("company_id", companyId)
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        return { success: true, data };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
 }

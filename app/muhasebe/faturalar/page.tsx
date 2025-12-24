@@ -32,6 +32,7 @@ export default async function InvoicesPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vade</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tip</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Tutar</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Kalan</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
             </tr>
           </thead>
@@ -59,22 +60,26 @@ export default async function InvoicesPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
-                    {inv.genel_toplam.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
+                    {Number(inv.genel_toplam).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                    {Number(inv.kalan_tutar || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       inv.durum === 'ODENDI' ? 'bg-blue-100 text-blue-800' : 
+                      inv.durum === 'KISMI_ODENDI' ? 'bg-orange-100 text-orange-800' :
                       inv.durum === 'IPTAL' ? 'bg-gray-100 text-gray-800' : 
                       'bg-yellow-100 text-yellow-800'
                     }`}>
-                      {inv.durum}
+                      {inv.durum === 'KISMI_ODENDI' ? 'Kısmi Ödendi' : inv.durum}
                     </span>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                   Henüz fatura oluşturulmamış.
                 </td>
               </tr>

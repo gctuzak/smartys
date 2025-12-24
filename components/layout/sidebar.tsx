@@ -22,19 +22,34 @@ import {
   Wallet
 } from "lucide-react";
 
-const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Teklif Oluştur", href: "/create-proposal", icon: PlusCircle },
-  { name: "Görevler", href: "/tasks", icon: ListTodo },
-  { name: "Teklifler", href: "/proposals", icon: FileText },
-  { name: "Siparişler", href: "/orders", icon: ShoppingCart },
-  { name: "Faturalar", href: "/muhasebe/faturalar", icon: Receipt },
-  { name: "Cari Hesaplar", href: "/muhasebe/cariler", icon: Wallet },
-  { name: "Stok Durumu", href: "/muhasebe/stok", icon: Warehouse },
-  { name: "Şirketler", href: "/companies", icon: Building2 },
-  { name: "Kişiler", href: "/persons", icon: Users },
-  { name: "Temsilciler", href: "/users", icon: UserCheck },
-  { name: "Ürün Yönetimi", href: "/products", icon: Package },
+const navigationGroups = [
+  {
+    name: "",
+    items: [
+      { name: "Dashboard", href: "/", icon: LayoutDashboard },
+      { name: "Teklif Oluştur", href: "/create-proposal", icon: PlusCircle },
+      { name: "Görevler", href: "/tasks", icon: ListTodo },
+      { name: "Teklifler", href: "/proposals", icon: FileText },
+      { name: "Siparişler", href: "/orders", icon: ShoppingCart },
+    ]
+  },
+  {
+    name: "Muhasebe",
+    items: [
+      { name: "Faturalar", href: "/muhasebe/faturalar", icon: Receipt },
+      { name: "Cari Hesaplar", href: "/muhasebe/cariler", icon: Wallet },
+      { name: "Stok Durumu", href: "/muhasebe/stok", icon: Warehouse },
+    ]
+  },
+  {
+    name: "Tanımlamalar",
+    items: [
+      { name: "Şirketler", href: "/companies", icon: Building2 },
+      { name: "Kişiler", href: "/persons", icon: Users },
+      { name: "Temsilciler", href: "/users", icon: UserCheck },
+      { name: "Ürün Yönetimi", href: "/products", icon: Package },
+    ]
+  }
 ];
 
 export function Sidebar() {
@@ -46,25 +61,36 @@ export function Sidebar() {
         <LayoutDashboard className="h-6 w-6 text-blue-500 mr-2" />
         <span className="text-lg font-bold">Smartys</span>
       </div>
-      <nav className="flex-1 space-y-1 px-2 py-4">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                isActive
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-400 hover:bg-gray-800 hover:text-white",
-                "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold transition-colors"
-              )}
-            >
-              <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-              {item.name}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 px-2 py-4">
+        {navigationGroups.map((group, groupIndex) => (
+          <div key={groupIndex} className="mb-4">
+            {group.name && (
+              <div className="px-2 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                {group.name}
+              </div>
+            )}
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={cn(
+                      isActive
+                        ? "bg-gray-800 text-white"
+                        : "text-gray-400 hover:bg-gray-800 hover:text-white",
+                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold transition-colors"
+                    )}
+                  >
+                    <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
       <div className="border-t border-gray-800 p-4 space-y-1">
         <Link

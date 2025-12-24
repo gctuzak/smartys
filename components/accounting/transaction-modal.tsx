@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { addTransactionAction } from "@/app/actions/current-account";
+import { addTransactionAction, getCompanyOrdersAction } from "@/app/actions/current-account";
+import { getUnpaidInvoicesAction } from "@/app/actions/accounting";
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -16,15 +17,82 @@ interface TransactionModalProps {
   onSuccess: () => void;
 }
 
+interface Order {
+    id: string;
+    order_no: string;
+    amount: number;
+    status: string;
+}
+
+interface Invoice {
+    id: string;
+    fatura_no: string;
+    genel_toplam: number;
+    kalan_tutar: number;
+    tarih: string;
+    tip: string;
+}
+
 export function TransactionModal({ isOpen, onClose, companyId, onSuccess }: TransactionModalProps) {
   const [loading, setLoading] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [formData, setFormData] = useState({
     type: "TAHSILAT",
     amount: "",
     date: new Date().toISOString().split("T")[0],
     docNo: "",
     description: "",
+    orderId: "",
+    faturaId: ""
   });
+
+  useEffect(() => {
+    if (isOpen && companyId) {
+        // Fetch orders and invoices
+        const fetchData = async () => {
+            const [ordersRes, invoicesRes] = await Promise.all([
+                getCompanyOrdersAction(companyId),
+                getUnpaidInvoicesAction(companyId)
+            ]);
+
+            if (ordersRes.success) {
+                setOrders(ordersRes.data || []);
+            }
+            if (invoicesRes.success) {
+                setInvoices(invoicesRes.data || []);
+            }
+        };
+        fetchData();
+    }
+  }, [isOpen, companyId]);
+
+  const handleInvoiceChange = (invoiceId: string) => {
+      const invoice = invoices.find(i => i.id === invoiceId);
+      if (invoice) {
+          setFormData(prev => ({
+              ...prev,
+              faturaId: invoiceId,
+              amount: invoice.kalan_tutar.toString(), // Auto-fill with remaining amount
+              description: prev.description || `${invoice.fatura_no} nolu fatura tahsilatı`
+          }));
+      } else {
+          setFormData(prev => ({ ...prev, faturaId: invoiceId }));
+      }
+  };
+
+  const handleOrderChange = (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+        setFormData(prev => ({
+            ...prev,
+            orderId: orderId,
+            description: prev.description || `${order.order_no} nolu sipariş avansı`
+        }));
+    } else {
+        setFormData(prev => ({ ...prev, orderId: orderId }));
+    }
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +110,8 @@ export function TransactionModal({ isOpen, onClose, companyId, onSuccess }: Tran
         tarih: formData.date,
         belge_no: formData.docNo,
         aciklama: formData.description,
+        order_id: formData.orderId || undefined,
+        fatura_id: formData.faturaId || undefined
       });
 
       if (result.success) {
@@ -54,6 +124,8 @@ export function TransactionModal({ isOpen, onClose, companyId, onSuccess }: Tran
             date: new Date().toISOString().split("T")[0],
             docNo: "",
             description: "",
+            orderId: "",
+            faturaId: ""
         });
       } else {
         toast.error(result.error || "İşlem kaydedilemedi");
@@ -99,6 +171,50 @@ export function TransactionModal({ isOpen, onClose, companyId, onSuccess }: Tran
               />
             </div>
           </div>
+
+          {/* New Fields for Order and Invoice Selection */}
+          {formData.type === "TAHSILAT" && (
+              <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                      <label className="text-sm font-medium">İlgili Sipariş (Avans)</label>
+                      <Select
+                          value={formData.orderId}
+                          onValueChange={handleOrderChange}
+                      >
+                          <SelectTrigger>
+                              <SelectValue placeholder="Seçiniz" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              <SelectItem value="none">Seçiniz</SelectItem>
+                              {orders.map((order) => (
+                                  <SelectItem key={order.id} value={order.id}>
+                                      {order.order_no}
+                                  </SelectItem>
+                              ))}
+                          </SelectContent>
+                      </Select>
+                  </div>
+                  <div className="space-y-2">
+                      <label className="text-sm font-medium">İlgili Fatura (Kapama)</label>
+                      <Select
+                          value={formData.faturaId}
+                          onValueChange={handleInvoiceChange}
+                      >
+                          <SelectTrigger>
+                              <SelectValue placeholder="Seçiniz" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              <SelectItem value="none">Seçiniz</SelectItem>
+                              {invoices.map((invoice) => (
+                                  <SelectItem key={invoice.id} value={invoice.id}>
+                                      {invoice.fatura_no} ({Number(invoice.kalan_tutar).toLocaleString('tr-TR')} TL)
+                                  </SelectItem>
+                              ))}
+                          </SelectContent>
+                      </Select>
+                  </div>
+              </div>
+          )}
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Tutar</label>

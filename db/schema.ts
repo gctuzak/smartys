@@ -152,6 +152,7 @@ export const faturalar = pgTable("faturalar", {
   araToplam: decimal("ara_toplam", { precision: 10, scale: 2 }).default("0"),
   kdvToplam: decimal("kdv_toplam", { precision: 10, scale: 2 }).default("0"),
   genelToplam: decimal("genel_toplam", { precision: 10, scale: 2 }).default("0"),
+  kalanTutar: decimal("kalan_tutar", { precision: 10, scale: 2 }).default("0"), // New: Kalan Tutar
   paraBirimi: text("para_birimi").default("TRY"),
   dovizKuru: decimal("doviz_kuru", { precision: 10, scale: 4 }).default("1"),
   notlar: text("notlar"),
@@ -391,6 +392,8 @@ export const cariHareketler = pgTable("cari_hareketler", {
   borc: decimal("borc", { precision: 10, scale: 2 }).default("0"),
   alacak: decimal("alacak", { precision: 10, scale: 2 }).default("0"),
   bakiye: decimal("bakiye", { precision: 10, scale: 2 }).default("0"),
+  orderId: uuid("order_id").references(() => orders.id),
+  faturaId: uuid("fatura_id").references(() => faturalar.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -398,5 +401,13 @@ export const cariHareketlerRelations = relations(cariHareketler, ({ one }) => ({
   company: one(companies, {
     fields: [cariHareketler.companyId],
     references: [companies.id],
+  }),
+  order: one(orders, {
+    fields: [cariHareketler.orderId],
+    references: [orders.id],
+  }),
+  fatura: one(faturalar, {
+    fields: [cariHareketler.faturaId],
+    references: [faturalar.id],
   }),
 }));

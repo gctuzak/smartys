@@ -9,7 +9,7 @@ import { parseExcelAction } from "@/app/actions/parse-excel";
 import { parsePdfAction } from "@/app/actions/parse-pdf";
 import { ParsedData } from "@/types";
 import { toast } from "sonner";
-import { FileText, Sparkles, Upload, Keyboard, Wand2 } from "lucide-react";
+import { FileText, Sparkles, Upload, Keyboard, Wand2, Database } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +17,7 @@ export default function CreateProposalPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
-  const [mode, setMode] = useState<"upload" | "manual">("upload");
+  const [mode, setMode] = useState<"upload" | "manual" | "database">("upload");
 
   const handleFileSelect = async (file: File) => {
     setIsUploading(true);
@@ -108,6 +108,18 @@ export default function CreateProposalPage() {
                   <Keyboard className="w-4 h-4" />
                   Excel'den Yapıştır
                 </button>
+                <button
+                  onClick={() => setMode("database")}
+                  className={cn(
+                    "flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                    mode === 'database' 
+                      ? "bg-blue-600 text-white shadow-md" 
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  )}
+                >
+                  <Database className="w-4 h-4" />
+                  Veritabanından Seç
+                </button>
               </div>
             </div>
 
@@ -124,6 +136,7 @@ export default function CreateProposalPage() {
                         <ManualProposalBuilder 
                             onComplete={handleManualComplete}
                             onCancel={() => setMode("upload")}
+                            initialMode={mode === 'database' ? 'database' : 'manual'}
                         />
                     </div>
                 )}

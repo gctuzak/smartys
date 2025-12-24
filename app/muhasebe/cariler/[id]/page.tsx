@@ -169,8 +169,20 @@ export default function CompanyAccountPage() {
                         </span>
                       </TableCell>
                       <TableCell>{t.belge_no || "-"}</TableCell>
-                      <TableCell className="max-w-[200px] truncate" title={t.aciklama}>
-                        {t.aciklama || "-"}
+                      <TableCell className="max-w-[200px]" title={t.aciklama}>
+                        <div className="flex flex-col gap-1">
+                          <span className="truncate">{t.aciklama || "-"}</span>
+                          {t.order && (
+                            <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded w-fit border border-blue-100">
+                              Sipariş: {t.order.order_no}
+                            </span>
+                          )}
+                          {t.fatura && (
+                            <span className="text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded w-fit border border-purple-100">
+                              Fatura: {t.fatura.fatura_no}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right text-red-600 font-medium">
                         {Number(t.borc) > 0 ? Number(t.borc).toLocaleString("tr-TR", { minimumFractionDigits: 2 }) : "-"}

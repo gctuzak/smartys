@@ -95,3 +95,19 @@ export async function getStockAction(page = 1, pageSize = 20) {
       return { data: null, count: 0, error: error.message };
     }
   }
+
+export async function getUnpaidInvoicesAction(companyId: string) {
+    try {
+        const { data, error } = await supabase
+            .from("faturalar")
+            .select("id, fatura_no, genel_toplam, kalan_tutar, tarih, tip")
+            .eq("company_id", companyId)
+            .neq("durum", "ODENDI")
+            .order("tarih", { ascending: true });
+
+        if (error) throw error;
+        return { success: true, data };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}

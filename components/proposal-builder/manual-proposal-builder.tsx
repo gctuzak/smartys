@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ParsedData } from "@/types";
-import { Search, Plus, ArrowRight, User, Building2, Check, AlertCircle } from "lucide-react";
+import { Search, Plus, ArrowRight, User, Building2, Check, AlertCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { toTurkishLikePattern, cn } from "@/lib/utils";
@@ -14,17 +14,29 @@ import { createCompanyWithPersonAction, createPersonForCompanyAction } from "@/a
 import { processCustomerAction } from "@/app/actions/process-customer";
 import { parseItemsTextAction } from "@/app/actions/parse-items";
 import { Loader2 } from "lucide-react";
+import { ProductAutocomplete } from "./product-autocomplete";
+import { ProductSearchResult } from "@/app/actions/search-products";
 
 interface ManualProposalBuilderProps {
   onComplete: (data: ParsedData) => void;
   onCancel: () => void;
+  initialMode?: 'manual' | 'database';
 }
 
 type Step = "customer" | "items";
 
-export function ManualProposalBuilder({ onComplete, onCancel }: ManualProposalBuilderProps) {
+export function ManualProposalBuilder({ onComplete, onCancel, initialMode = 'manual' }: ManualProposalBuilderProps) {
   const [step, setStep] = useState<Step>("customer");
+  const [mode, setMode] = useState<'manual' | 'database'>(initialMode);
   const [loading, setLoading] = useState(false);
+  
+  // Database Mode State
+  const [databaseItems, setDatabaseItems] = useState<{
+    id: string;
+    product: ProductSearchResult;
+    quantity: number;
+  }[]>([]);
+  const [productSearchInput, setProductSearchInput] = useState("");
   
   // Data State
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
@@ -336,6 +348,73 @@ export function ManualProposalBuilder({ onComplete, onCancel }: ManualProposalBu
       return;
     }
     setStep("items");
+  };
+
+  const handleAddDatabaseItem = (product: ProductSearchResult) => {
+    setDatabaseItems(prev => [...prev, {
+      id: Math.random().toString(36).substring(2, 9),
+      product,
+      quantity: 1
+    }]);
+    setProductSearchInput("");
+    toast.success(`${product.name} eklendi`);
+  };
+
+  const handleRemoveDatabaseItem = (id: string) => {
+    setDatabaseItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const handleUpdateDatabaseItemQuantity = (id: string, quantity: number) => {
+    setDatabaseItems(prev => prev.map(item => 
+      item.id === id ? { ...item, quantity } : item
+    ));
+  };
+
+  const handleDatabaseComplete = () => {
+    if (databaseItems.length === 0) {
+      toast.error("Lütfen en az bir ürün ekleyin");
+      return;
+    }
+
+    const items = databaseItems.map((item, index) => ({
+      id: item.id,
+      description: item.product.name,
+      quantity: item.quantity,
+      unit: item.product.unit || "Adet",
+      unitPrice: item.product.defaultPrice || 0,
+      totalPrice: (item.product.defaultPrice || 0) * item.quantity,
+      order: index + 1,
+      // Add extra fields if needed from product type
+      isHeader: false
+    }));
+
+    const parsedData: ParsedData = {
+        company: selectedCompany ? {
+            name: selectedCompany.name,
+            contactInfo: {
+                email: selectedCompany.email1,
+                phone: selectedCompany.phone1,
+                address: selectedCompany.address,
+                taxNo: selectedCompany.tax_no,
+                taxOffice: selectedCompany.tax_office
+            }
+        } : { name: "", contactInfo: {} },
+        person: selectedPerson ? {
+            name: `${selectedPerson.first_name} ${selectedPerson.last_name}`,
+            email: selectedPerson.email1,
+            phone: selectedPerson.phone1,
+            title: selectedPerson.title
+        } : undefined,
+        proposal: {
+            items: items,
+            totalAmount: items.reduce((sum, i) => sum + i.totalPrice, 0),
+            vatRate: 20,
+            currency: 'EUR', // Default currency
+            notes: parsedCustomer?.project_name ? `Proje: ${parsedCustomer.project_name}` : undefined
+        }
+    };
+
+    onComplete(parsedData);
   };
 
   const handleParseAndComplete = async () => {
@@ -835,37 +914,118 @@ export function ManualProposalBuilder({ onComplete, onCancel }: ManualProposalBu
              </div>
           </CardHeader>
           <CardContent className="space-y-6 px-0">
-             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100 flex gap-4">
-                <div className="bg-white p-2.5 rounded-xl shadow-sm h-fit">
-                    <Building2 className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                    <h4 className="font-bold text-gray-900 mb-1">Nasıl Çalışır?</h4>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                        Excel'den ürün listesini kopyalayıp aşağıdaki alana yapıştırın. Sütunların sırası önemli değildir, yapay zeka sütunları (Ürün Adı, Adet, Fiyat vb.) otomatik olarak algılayacaktır.
-                    </p>
-                </div>
-             </div>
-             
-             <textarea 
-                placeholder="Örnek: 
+             {mode === 'manual' ? (
+                 <>
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100 flex gap-4">
+                        <div className="bg-white p-2.5 rounded-xl shadow-sm h-fit">
+                            <Building2 className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-gray-900 mb-1">Nasıl Çalışır?</h4>
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                                Excel'den ürün listesini kopyalayıp aşağıdaki alana yapıştırın. Sütunların sırası önemli değildir, yapay zeka sütunları (Ürün Adı, Adet, Fiyat vb.) otomatik olarak algılayacaktır.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <textarea 
+                        placeholder="Örnek: 
 Laptop Bilgisayar | 5 Adet | 25.000 TL
 Ofis Sandalyesi | 10 Adet | 3.500 TL"
-                className="flex min-h-[300px] w-full rounded-xl border border-gray-200 bg-white px-6 py-6 text-sm font-mono leading-relaxed ring-offset-background placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-100 focus-visible:border-blue-400 disabled:cursor-not-allowed disabled:opacity-50 resize-y shadow-sm"
-                value={pastedItems}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPastedItems(e.target.value)}
-             />
+                        className="flex min-h-[300px] w-full rounded-xl border border-gray-200 bg-white px-6 py-6 text-sm font-mono leading-relaxed ring-offset-background placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-100 focus-visible:border-blue-400 disabled:cursor-not-allowed disabled:opacity-50 resize-y shadow-sm"
+                        value={pastedItems}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPastedItems(e.target.value)}
+                    />
 
-             <div className="flex justify-end pt-4">
-                 <Button 
-                    className="h-14 px-8 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl font-bold text-lg transition-all hover:scale-105" 
-                    disabled={!pastedItems.trim() || loading} 
-                    onClick={handleParseAndComplete}
-                 >
-                     {loading && <Loader2 className="mr-3 h-5 w-5 animate-spin" />}
-                     Teklifi Oluştur
-                 </Button>
-             </div>
+                    <div className="flex justify-end pt-4">
+                        <Button 
+                            className="h-14 px-8 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl font-bold text-lg transition-all hover:scale-105" 
+                            disabled={!pastedItems.trim() || loading} 
+                            onClick={handleParseAndComplete}
+                        >
+                            {loading && <Loader2 className="mr-3 h-5 w-5 animate-spin" />}
+                            Teklifi Oluştur
+                        </Button>
+                    </div>
+                 </>
+             ) : (
+                 <>
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Ürün Ara</label>
+                            <ProductAutocomplete 
+                                 value={productSearchInput} 
+                                 onChange={setProductSearchInput} 
+                                 onSelect={handleAddDatabaseItem}
+                                 className="bg-gray-50 border-gray-200 focus:bg-white"
+                             />
+                        </div>
+
+                        {/* List of added items */}
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Eklenen Ürünler ({databaseItems.length})</h3>
+                            
+                            {databaseItems.length === 0 ? (
+                                <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-gray-500">
+                                    Henüz ürün eklenmedi. Yukarıdan arama yaparak ekleyebilirsiniz.
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
+                                    {databaseItems.map((item, index) => (
+                                        <div key={item.id} className="p-4 bg-white flex items-center gap-4 group hover:bg-gray-50 transition-colors">
+                                            <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0">
+                                                {index + 1}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-medium text-gray-900 truncate">{item.product.name}</div>
+                                                <div className="text-xs text-gray-500">
+                                                    {item.product.code ? `#${item.product.code}` : ''} 
+                                                    {item.product.defaultPrice ? ` • ${item.product.defaultPrice} ${item.product.unit || 'Birim'}` : ''}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex items-center border rounded-lg bg-white shadow-sm h-9">
+                                                    <button 
+                                                        className="px-2.5 h-full hover:bg-gray-100 text-gray-600 border-r"
+                                                        onClick={() => handleUpdateDatabaseItemQuantity(item.id, Math.max(1, item.quantity - 1))}
+                                                    >
+                                                        -
+                                                    </button>
+                                                    <div className="w-12 text-center text-sm font-medium">{item.quantity}</div>
+                                                    <button 
+                                                        className="px-2.5 h-full hover:bg-gray-100 text-gray-600 border-l"
+                                                        onClick={() => handleUpdateDatabaseItemQuantity(item.id, item.quantity + 1)}
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="text-gray-400 hover:text-red-600 hover:bg-red-50"
+                                                    onClick={() => handleRemoveDatabaseItem(item.id)}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end pt-4">
+                        <Button 
+                            className="h-14 px-8 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl font-bold text-lg transition-all hover:scale-105" 
+                            disabled={databaseItems.length === 0} 
+                            onClick={handleDatabaseComplete}
+                        >
+                            Teklifi Oluştur
+                        </Button>
+                    </div>
+                 </>
+             )}
           </CardContent>
         </Card>
       )}
