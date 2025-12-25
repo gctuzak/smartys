@@ -43,32 +43,18 @@ async function main() {
       console.log("Using DATABASE_URL for migration...");
   }
 
-  // Resolve hostname to IPv4 to avoid EHOSTUNREACH on IPv6
-  let resolvedUrl = connectionString;
-  try {
-      const url = new URL(connectionString);
-      const hostname = url.hostname;
-      console.log(`Resolving IPv4 for ${hostname}...`);
-      const ipAddresses = await dns.promises.resolve4(hostname);
-      if (ipAddresses && ipAddresses.length > 0) {
-          console.log(`Resolved to ${ipAddresses[0]}`);
-          url.hostname = ipAddresses[0];
-          // Try port 5432 (Session Pooler) instead of 6543 (Transaction Pooler)
-          // if (url.port === '6543') {
-          //     console.log("Switching to port 5432 (Session Pooler)...");
-          //     url.port = '5432';
-          //     url.searchParams.delete('pgbouncer');
-          //     url.searchParams.delete('connection_limit');
-          // }
-          resolvedUrl = url.toString();
-      } else {
-          console.warn("Could not resolve IPv4, using original hostname.");
-      }
-  } catch (e) {
-      console.error("Failed to resolve URL hostname.", e);
-  }
+  // Use the connection string as is, relying on dns.setDefaultResultOrder('ipv4first')
+  // to handle IPv4 preference for the pooler URL.
+  // We do NOT manually resolve IP to avoid breaking SNI.
+  // We do NOT switch ports; we use whatever is provided (likely 6543 for pooler).
+  
+  console.log("Connecting to:", connectionString.replace(/:[^:/@]+@/, ':****@'));
 
-  const client = postgres(resolvedUrl!, { ssl: 'require', max: 1, prepare: false });
+  const client = postgres(connectionString, { 
+    ssl: { rejectUnauthorized: false }, 
+    max: 1, 
+    prepare: false 
+  });
   const db = drizzle(client);
 
   try {

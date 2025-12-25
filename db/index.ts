@@ -23,6 +23,6 @@ const isLocal =
 
 const client = postgres(
   connectionString || 'postgres://postgres:postgres@localhost:5432/postgres',
-  isLocal ? {} : { ssl: 'require' }
+  isLocal ? {} : { ssl: 'require', prepare: false }
 );
 export const db = drizzle(client, { schema });

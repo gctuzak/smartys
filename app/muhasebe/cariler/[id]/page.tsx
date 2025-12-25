@@ -2,10 +2,19 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Download, FileText, ArrowUpRight, ArrowDownLeft, Building2, Phone, Mail, MapPin, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Download, FileText, ArrowUpRight, ArrowDownLeft, Building2, Phone, Mail, MapPin, Trash2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { getCompanyAction } from "@/app/actions/fetch-data";
 import { getCompanyTransactionsAction, deleteTransactionAction } from "@/app/actions/current-account";
 import { runMigration022Action } from "@/app/actions/migration";
@@ -22,6 +31,8 @@ export default function CompanyAccountPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [migrationErrorSql, setMigrationErrorSql] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -66,11 +77,25 @@ export default function CompanyAccountPage() {
 
   const handleMigration = async () => {
     if (!confirm("Sistem güncellemesini çalıştırmak istiyor musunuz?")) return;
+    
     const res = await runMigration022Action();
+    
     if (res.success) {
-      alert("Güncelleme başarılı!");
+      alert("Güncelleme başarılı! Şimdi bu butonu kaldırabilirsiniz.");
     } else {
-      alert("Hata: " + res.error);
+      if (res.sql) {
+        setMigrationErrorSql(res.sql);
+      } else {
+        alert("Hata: " + res.error);
+      }
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (migrationErrorSql) {
+      navigator.clipboard.writeText(migrationErrorSql);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -97,6 +122,10 @@ export default function CompanyAccountPage() {
           <p className="text-gray-500">Cari Hesap Ekstresi</p>
         </div>
         <div className="ml-auto flex gap-2">
+          <Button variant="destructive" className="bg-yellow-600 hover:bg-yellow-700 text-white" onClick={handleMigration}>
+            <ArrowUpRight className="mr-2 h-4 w-4" />
+            Sistem Güncellemesi
+          </Button>
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
             PDF İndir
@@ -159,9 +188,6 @@ export default function CompanyAccountPage() {
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg">Hesap Hareketleri</CardTitle>
-              <Button variant="outline" size="sm" onClick={handleMigration} className="text-xs">
-                 Sistem Güncellemesi
-              </Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -287,6 +313,56 @@ export default function CompanyAccountPage() {
         companyId={companyId}
         onSuccess={fetchData}
       />
+
+      <Dialog open={!!migrationErrorSql} onOpenChange={(open) => !open && setMigrationErrorSql(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Otomatik Güncelleme Başarısız</DialogTitle>
+            <DialogDescription>
+              Veritabanı bağlantı hatası nedeniyle güncelleme otomatik yapılamadı. 
+              Lütfen aşağıdaki SQL kodunu kopyalayıp Supabase SQL Editöründe çalıştırın.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="relative mt-4">
+            <Textarea 
+              value={migrationErrorSql || ""} 
+              readOnly 
+              className="font-mono text-xs h-[300px] bg-slate-50 resize-none p-4"
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              className="absolute top-2 right-2 h-8"
+              onClick={copyToClipboard}
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3 h-3 mr-1" />
+                  Kopyalandı
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3 h-3 mr-1" />
+                  Kopyala
+                </>
+              )}
+            </Button>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMigrationErrorSql(null)}>
+              Kapat
+            </Button>
+            <Button onClick={() => {
+              setMigrationErrorSql(null);
+              alert("Kod çalıştırıldıysa 'Sistem Güncellemesi' butonunu artık kullanmanıza gerek yoktur.");
+            }}>
+              Kodu Çalıştırdım, Devam Et
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

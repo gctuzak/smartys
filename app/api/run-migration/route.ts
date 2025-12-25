@@ -1,11 +1,11 @@
 
-"use server";
+import { NextResponse } from 'next/server';
+import { db } from '@/db';
+import { sql } from 'drizzle-orm';
 
-import { db } from "@/db";
-import { sql } from "drizzle-orm";
-
-export async function runMigration022Action() {
-  const migrationSql = `
+export async function GET() {
+  try {
+    const migrationSql = `
 CREATE OR REPLACE FUNCTION delete_cari_hareket(
   p_id uuid
 ) RETURNS void AS $$
@@ -64,19 +64,21 @@ BEGIN
 
 END;
 $$ LANGUAGE plpgsql;
-  `;
+    `;
 
-  try {
-    console.log("Starting migration 022 via Server Action...");
     await db.execute(sql.raw(migrationSql));
-    console.log("Migration 022 executed successfully.");
-    return { success: true };
+    return NextResponse.json({ success: true, message: 'Migration executed' });
   } catch (error: any) {
-    console.error("Migration 022 failed:", error);
-    return { 
+    console.error('Migration error full object:', error);
+    return NextResponse.json({ 
       success: false, 
-      error: error.message || "Bilinmeyen hata",
-      sql: migrationSql 
-    };
+      error: error.message,
+      code: error.code,
+      detail: error.detail,
+      hint: error.hint,
+      name: error.name,
+      stack: error.stack,
+      full_error: JSON.stringify(error, Object.getOwnPropertyNames(error))
+    }, { status: 500 });
   }
 }
