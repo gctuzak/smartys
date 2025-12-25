@@ -110,8 +110,8 @@ export function TransactionModal({ isOpen, onClose, companyId, onSuccess }: Tran
         tarih: formData.date,
         belge_no: formData.docNo,
         aciklama: formData.description,
-        order_id: formData.orderId || undefined,
-        fatura_id: formData.faturaId || undefined
+        order_id: (formData.orderId && formData.orderId !== "none") ? formData.orderId : undefined,
+        fatura_id: (formData.faturaId && formData.faturaId !== "none") ? formData.faturaId : undefined
       });
 
       if (result.success) {

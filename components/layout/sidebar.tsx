@@ -19,7 +19,8 @@ import {
   LogOut,
   Receipt,
   Warehouse,
-  Wallet
+  Wallet,
+  Banknote
 } from "lucide-react";
 
 const navigationGroups = [
@@ -39,6 +40,7 @@ const navigationGroups = [
       { name: "Faturalar", href: "/muhasebe/faturalar", icon: Receipt },
       { name: "Cari Hesaplar", href: "/muhasebe/cariler", icon: Wallet },
       { name: "Stok Durumu", href: "/muhasebe/stok", icon: Warehouse },
+      { name: "Döviz Kurları", href: "/muhasebe/kurlar", icon: Banknote },
     ]
   },
   {

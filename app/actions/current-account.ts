@@ -2,6 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
+import { getExchangeRates } from "@/lib/tcmb";
 
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_ANON_KEY!;
@@ -12,7 +13,7 @@ export interface AddTransactionParams {
   islem_turu: "TAHSILAT" | "ODEME" | "ACILIS_BAKIYESI" | "VIRMAN";
   belge_no?: string;
   aciklama?: string;
-  tutar: number; // Frontend sends positive amount
+  tutar: number; // Frontend sends positive amount (TL)
   tarih: string;
   order_id?: string;
   fatura_id?: string;
@@ -31,6 +32,45 @@ export async function addTransactionAction(params: AddTransactionParams) {
         borc = params.tutar;
     }
 
+    // Currency Conversion Logic
+    let doviz_turu = null;
+    let doviz_kuru = null;
+    let doviz_tutari = null;
+
+    // 1. Determine Target Currency
+    let targetCurrency = 'TRY';
+    if (params.fatura_id) {
+        const { data: fatura } = await supabase.from('faturalar').select('para_birimi').eq('id', params.fatura_id).single();
+        if (fatura && fatura.para_birimi) targetCurrency = fatura.para_birimi;
+    } else if (params.order_id) {
+        const { data: order } = await supabase.from('orders').select('currency').eq('id', params.order_id).single();
+        if (order && order.currency) targetCurrency = order.currency;
+    }
+
+    // 2. Calculate if Foreign Currency
+    if (targetCurrency !== 'TRY') {
+        const rates = await getExchangeRates();
+        if (rates) {
+            doviz_turu = targetCurrency;
+            let rate = 1;
+            
+            // Determine rate based on currency and transaction type
+            // User requested: "Tahsilatlarda gelen TL ödemeyi biz tcmb'nin döviz satış kurundan ilgili para birimine çavirmeliyiz."
+            // So we use Selling Rate for both Collections (Tahsilat) and Payments (Odeme) when converting TL to FX.
+            if (targetCurrency === 'USD') {
+                rate = rates.usdSelling;
+            } else if (targetCurrency === 'EUR') {
+                rate = rates.eurSelling;
+            }
+
+            if (rate > 0) {
+                doviz_kuru = rate;
+                // Amount in FX = Amount (TL) / Rate
+                doviz_tutari = Number((params.tutar / rate).toFixed(2));
+            }
+        }
+    }
+
     const { error } = await supabase.rpc("add_cari_hareket", {
       p_company_id: params.company_id,
       p_islem_turu: params.islem_turu,
@@ -39,8 +79,11 @@ export async function addTransactionAction(params: AddTransactionParams) {
       p_borc: borc,
       p_alacak: alacak,
       p_tarih: params.tarih,
-      p_order_id: params.order_id || null,
-      p_fatura_id: params.fatura_id || null
+      p_order_id: (params.order_id && params.order_id !== "none") ? params.order_id : null,
+      p_fatura_id: (params.fatura_id && params.fatura_id !== "none") ? params.fatura_id : null,
+      p_doviz_turu: doviz_turu,
+      p_doviz_kuru: doviz_kuru,
+      p_doviz_tutari: doviz_tutari
     });
 
     if (error) throw error;
@@ -58,41 +101,43 @@ export async function addTransactionAction(params: AddTransactionParams) {
   }
 }
 
-export async function getCompanyTransactionsAction(companyId: string, page = 1, pageSize = 20) {
+export async function deleteTransactionAction(id: string, company_id: string) {
   try {
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
-
-    const { data, count, error } = await supabase
-      .from("cari_hareketler")
-      .select(`
-        *,
-        order:orders (order_no),
-        fatura:faturalar (fatura_no)
-      `, { count: "exact" })
-      .eq("company_id", companyId)
-      .order("tarih", { ascending: false }) // Newest first
-      .range(from, to);
+    const { error } = await supabase.rpc("delete_cari_hareket", {
+      p_id: id,
+    });
 
     if (error) throw error;
 
-    return { success: true, data, count };
+    revalidatePath(`/muhasebe/cariler/${company_id}`);
+    revalidatePath("/companies");
+    revalidatePath("/muhasebe/faturalar");
+
+    return { success: true };
   } catch (error: any) {
+    console.error("Delete transaction error:", error);
     return { success: false, error: error.message };
   }
 }
 
-export async function getCompanyOrdersAction(companyId: string) {
-    try {
-        const { data, error } = await supabase
-            .from("orders")
-            .select("id, order_no, amount, status")
-            .eq("company_id", companyId)
-            .order("created_at", { ascending: false });
+export async function getCompanyTransactionsAction(companyId: string) {
+  try {
+    const { data, error } = await supabase
+      .from("cari_hareketler")
+      .select(`
+        *,
+        order:orders(order_no),
+        fatura:faturalar(fatura_no)
+      `)
+      .eq("company_id", companyId)
+      .order("tarih", { ascending: false })
+      .order("created_at", { ascending: false });
 
-        if (error) throw error;
-        return { success: true, data };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
+    if (error) throw error;
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error("Get transactions error:", error);
+    return { success: false, error: error.message };
+  }
 }

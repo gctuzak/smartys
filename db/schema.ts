@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, jsonb, timestamp, decimal, integer, serial, boolean, AnyPgColumn } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, jsonb, timestamp, decimal, integer, serial, boolean, AnyPgColumn, date } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
@@ -394,7 +394,19 @@ export const cariHareketler = pgTable("cari_hareketler", {
   bakiye: decimal("bakiye", { precision: 10, scale: 2 }).default("0"),
   orderId: uuid("order_id").references(() => orders.id),
   faturaId: uuid("fatura_id").references(() => faturalar.id),
+  dovizTuru: text("doviz_turu"),
+  dovizKuru: decimal("doviz_kuru", { precision: 10, scale: 4 }),
+  dovizTutari: decimal("doviz_tutari", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const exchangeRates = pgTable("exchange_rates", {
+  date: date("date").primaryKey(), // YYYY-MM-DD
+  usdBuying: decimal("usd_buying", { precision: 10, scale: 4 }).notNull(),
+  usdSelling: decimal("usd_selling", { precision: 10, scale: 4 }).notNull(),
+  eurBuying: decimal("eur_buying", { precision: 10, scale: 4 }).notNull(),
+  eurSelling: decimal("eur_selling", { precision: 10, scale: 4 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const cariHareketlerRelations = relations(cariHareketler, ({ one }) => ({

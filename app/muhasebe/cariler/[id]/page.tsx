@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Download, FileText, ArrowUpRight, ArrowDownLeft, Building2, Phone, Mail, MapPin } from "lucide-react";
+import { ArrowLeft, Plus, Download, FileText, ArrowUpRight, ArrowDownLeft, Building2, Phone, Mail, MapPin, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCompanyAction } from "@/app/actions/fetch-data";
-import { getCompanyTransactionsAction } from "@/app/actions/current-account";
+import { getCompanyTransactionsAction, deleteTransactionAction } from "@/app/actions/current-account";
+import { runMigration022Action } from "@/app/actions/migration";
 import { TransactionModal } from "@/components/accounting/transaction-modal";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -43,6 +44,35 @@ export default function CompanyAccountPage() {
       setLoading(false);
     }
   }, [companyId]);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Bu işlemi silmek istediğinize emin misiniz? Bu işlem geri alınamaz ve bakiyeler yeniden hesaplanacaktır.")) {
+      return;
+    }
+
+    try {
+      const result = await deleteTransactionAction(id, companyId);
+      if (result.success) {
+        // Refresh data
+        fetchData();
+      } else {
+        alert("Silme işlemi başarısız: " + result.error);
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert("Bir hata oluştu.");
+    }
+  };
+
+  const handleMigration = async () => {
+    if (!confirm("Sistem güncellemesini çalıştırmak istiyor musunuz?")) return;
+    const res = await runMigration022Action();
+    if (res.success) {
+      alert("Güncelleme başarılı!");
+    } else {
+      alert("Hata: " + res.error);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -127,7 +157,12 @@ export default function CompanyAccountPage() {
         {/* Sağ Taraf: Hareket Tablosu */}
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg">Hesap Hareketleri</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-lg">Hesap Hareketleri</CardTitle>
+              <Button variant="outline" size="sm" onClick={handleMigration} className="text-xs">
+                 Sistem Güncellemesi
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
@@ -140,12 +175,13 @@ export default function CompanyAccountPage() {
                   <TableHead className="text-right">Borç</TableHead>
                   <TableHead className="text-right">Alacak</TableHead>
                   <TableHead className="text-right">Bakiye</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {transactions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                       Henüz işlem hareketi yok.
                     </TableCell>
                   </TableRow>
@@ -185,13 +221,42 @@ export default function CompanyAccountPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right text-red-600 font-medium">
-                        {Number(t.borc) > 0 ? Number(t.borc).toLocaleString("tr-TR", { minimumFractionDigits: 2 }) : "-"}
+                        {Number(t.borc) > 0 ? (
+                          <div className="flex flex-col items-end">
+                            <span>{Number(t.borc).toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</span>
+                            {t.doviz_tutari && (
+                              <span className="text-xs text-gray-500 font-normal">
+                                ({Number(t.doviz_tutari).toLocaleString("tr-TR", { style: 'currency', currency: t.doviz_turu || 'USD' })})
+                              </span>
+                            )}
+                          </div>
+                        ) : "-"}
                       </TableCell>
                       <TableCell className="text-right text-green-600 font-medium">
-                        {Number(t.alacak) > 0 ? Number(t.alacak).toLocaleString("tr-TR", { minimumFractionDigits: 2 }) : "-"}
+                        {Number(t.alacak) > 0 ? (
+                          <div className="flex flex-col items-end">
+                            <span>{Number(t.alacak).toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</span>
+                            {t.doviz_tutari && (
+                              <span className="text-xs text-gray-500 font-normal">
+                                ({Number(t.doviz_tutari).toLocaleString("tr-TR", { style: 'currency', currency: t.doviz_turu || 'USD' })})
+                              </span>
+                            )}
+                          </div>
+                        ) : "-"}
                       </TableCell>
-                      <TableCell className="text-right font-bold text-gray-700">
+                      <TableCell className="text-right font-bold">
                         {Number(t.bakiye).toLocaleString("tr-TR", { minimumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50" 
+                          onClick={() => handleDelete(t.id)}
+                          title="İşlemi Sil"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
