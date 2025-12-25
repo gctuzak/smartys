@@ -1,10 +1,21 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
+import { getExchangeRates } from "@/lib/tcmb";
 
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+export async function getLatestRatesAction() {
+  try {
+    const rates = await getExchangeRates();
+    return { success: true, data: rates };
+  } catch (error: any) {
+    console.error("Error fetching latest rates:", error);
+    return { success: false, error: error.message };
+  }
+}
 
 export async function getExchangeRatesHistory(page = 1, pageSize = 20) {
   try {

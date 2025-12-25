@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Trash2, Save, Loader2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Plus, Trash2, Save, Loader2, RefreshCw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { createInvoiceAction } from "@/app/actions/accounting";
+import { getLatestRatesAction } from "@/app/actions/exchange-rates";
 import { useRouter } from "next/navigation";
+import { Combobox } from "@/components/ui/combobox";
 
 // Mock Supabase Client (Gerçek entegrasyonda yukarıdaki import açılmalı)
 // const supabase = createClient(
@@ -49,9 +51,42 @@ export default function InvoiceBuilder() {
   const [invoiceType, setInvoiceType] = useState("SATIS");
   const [invoiceNo, setInvoiceNo] = useState(`F${new Date().getFullYear()}${Math.floor(Math.random() * 10000)}`);
   
+  // Döviz State
+  const [currency, setCurrency] = useState<"TRY" | "USD" | "EUR">("TRY");
+  const [exchangeRate, setExchangeRate] = useState(1);
+  const [loadingRate, setLoadingRate] = useState(false);
+
   const [items, setItems] = useState<InvoiceItem[]>([
     { product_id: "", aciklama: "", miktar: 1, birim: "Adet", birim_fiyat: 0, kdv_orani: 20 }
   ]);
+
+  // Döviz kuru değişimi
+  useEffect(() => {
+    async function fetchRate() {
+      if (currency === "TRY") {
+        setExchangeRate(1);
+        return;
+      }
+
+      setLoadingRate(true);
+      try {
+        const result = await getLatestRatesAction();
+        if (result.success && result.data) {
+          if (currency === "USD") {
+            setExchangeRate(result.data.usdSelling || 0);
+          } else if (currency === "EUR") {
+            setExchangeRate(result.data.eurSelling || 0);
+          }
+        }
+      } catch (error) {
+        console.error("Kur alınamadı:", error);
+      } finally {
+        setLoadingRate(false);
+      }
+    }
+
+    fetchRate();
+  }, [currency]);
 
   // Verileri Yükle
   useEffect(() => {
@@ -136,8 +171,8 @@ export default function InvoiceBuilder() {
         tarih: invoiceDate,
         son_odeme_tarihi: dueDate || null,
         tip: invoiceType as "SATIS" | "ALIS",
-        para_birimi: "TRY",
-        doviz_kuru: 1,
+        para_birimi: currency,
+        doviz_kuru: exchangeRate,
         notlar: "Web üzerinden oluşturuldu.",
         items: rpcItems
       });
@@ -168,16 +203,18 @@ export default function InvoiceBuilder() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Cari / Müşteri</label>
-          <select 
-            className="w-full border rounded-md p-2"
+          <Combobox
+            options={companies.map(c => ({
+              value: c.id,
+              label: `${c.name} (Bakiye: ${c.guncel_bakiye})`
+            }))}
             value={selectedCompanyId}
-            onChange={(e) => setSelectedCompanyId(e.target.value)}
-          >
-            <option value="">Seçiniz...</option>
-            {companies.map(c => (
-              <option key={c.id} value={c.id}>{c.name} (Bakiye: {c.guncel_bakiye})</option>
-            ))}
-          </select>
+            onChange={setSelectedCompanyId}
+            placeholder="Cari Seçiniz..."
+            searchPlaceholder="Cari ara..."
+            emptyText="Cari bulunamadı."
+            className="w-full"
+          />
         </div>
 
         <div>
@@ -208,6 +245,36 @@ export default function InvoiceBuilder() {
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Para Birimi</label>
+          <div className="flex gap-2">
+            <select 
+              className="w-24 border rounded-md p-2"
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value as any)}
+            >
+              <option value="TRY">TRY</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+            </select>
+            <div className="relative flex-1">
+              <input 
+                type="number" 
+                className="w-full border rounded-md p-2 pr-8"
+                value={exchangeRate}
+                onChange={(e) => setExchangeRate(Number(e.target.value))}
+                disabled={currency === "TRY"}
+                step="0.0001"
+              />
+              {loadingRate && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                  <RefreshCw className="animate-spin text-gray-400" size={16} />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         <div>
@@ -315,16 +382,21 @@ export default function InvoiceBuilder() {
         <div className="w-64 space-y-2">
           <div className="flex justify-between text-gray-600">
             <span>Ara Toplam:</span>
-            <span>{totals.subtotal.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</span>
+            <span>{totals.subtotal.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {currency}</span>
           </div>
           <div className="flex justify-between text-gray-600">
             <span>Toplam KDV:</span>
-            <span>{totals.vatTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</span>
+            <span>{totals.vatTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {currency}</span>
           </div>
           <div className="flex justify-between text-xl font-bold text-gray-800 pt-2 border-t">
             <span>Genel Toplam:</span>
-            <span>{totals.grandTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</span>
+            <span>{totals.grandTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {currency}</span>
           </div>
+          {currency !== "TRY" && (
+            <div className="text-right text-sm text-gray-500 mt-1">
+              (Yaklaşık {(totals.grandTotal * exchangeRate).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺)
+            </div>
+          )}
         </div>
       </div>
 
