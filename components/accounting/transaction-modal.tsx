@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { addTransactionAction, getCompanyOrdersAction } from "@/app/actions/current-account";
+import { addTransactionAction, getCompanyOrdersAction, getLatestRatesAction } from "@/app/actions/current-account";
 import { getUnpaidInvoicesAction } from "@/app/actions/accounting";
 
 interface TransactionModalProps {
@@ -37,15 +37,30 @@ export function TransactionModal({ isOpen, onClose, companyId, onSuccess }: Tran
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [rates, setRates] = useState<any>(null);
+  
   const [formData, setFormData] = useState({
     type: "TAHSILAT",
     amount: "",
+    currency: "TRY",
+    exchangeRate: "1",
     date: new Date().toISOString().split("T")[0],
     docNo: "",
     description: "",
     orderId: "",
     faturaId: ""
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      // Fetch rates
+      getLatestRatesAction().then(res => {
+          if (res.success && res.data) {
+              setRates(res.data);
+          }
+      });
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && companyId) {
@@ -66,6 +81,18 @@ export function TransactionModal({ isOpen, onClose, companyId, onSuccess }: Tran
         fetchData();
     }
   }, [isOpen, companyId]);
+
+  const handleCurrencyChange = (val: string) => {
+      let rate = "1";
+      if (val === 'USD' && rates) rate = rates.usdSelling.toString();
+      else if (val === 'EUR' && rates) rate = rates.eurSelling.toString();
+      
+      setFormData(prev => ({
+          ...prev,
+          currency: val,
+          exchangeRate: rate
+      }));
+  };
 
   const handleInvoiceChange = (invoiceId: string) => {
       const invoice = invoices.find(i => i.id === invoiceId);
@@ -107,6 +134,8 @@ export function TransactionModal({ isOpen, onClose, companyId, onSuccess }: Tran
         company_id: companyId,
         islem_turu: formData.type as any,
         tutar: Number(formData.amount),
+        currency: formData.currency,
+        exchangeRate: Number(formData.exchangeRate),
         tarih: formData.date,
         belge_no: formData.docNo,
         aciklama: formData.description,
@@ -121,6 +150,8 @@ export function TransactionModal({ isOpen, onClose, companyId, onSuccess }: Tran
         setFormData({
             type: "TAHSILAT",
             amount: "",
+            currency: "TRY",
+            exchangeRate: "1",
             date: new Date().toISOString().split("T")[0],
             docNo: "",
             description: "",
@@ -216,18 +247,61 @@ export function TransactionModal({ isOpen, onClose, companyId, onSuccess }: Tran
               </div>
           )}
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Tutar</label>
-            <Input
-              type="number"
-              min="0"
-              step="0.01"
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              required
-              placeholder="0.00"
-            />
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2 col-span-1">
+              <label className="text-sm font-medium">Tutar</label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                required
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-2 col-span-1">
+              <label className="text-sm font-medium">Para Birimi</label>
+              <Select
+                value={formData.currency}
+                onValueChange={handleCurrencyChange}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TRY">TL (₺)</SelectItem>
+                  <SelectItem value="USD">USD ($)</SelectItem>
+                  <SelectItem value="EUR">EUR (€)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 col-span-1">
+              <label className="text-sm font-medium">Kur</label>
+              <Input
+                type="number"
+                min="0"
+                step="0.0001"
+                value={formData.exchangeRate}
+                onChange={(e) => setFormData({ ...formData, exchangeRate: e.target.value })}
+                disabled={formData.currency === 'TRY'}
+                placeholder="1.0000"
+              />
+            </div>
           </div>
+
+          {formData.currency !== 'TRY' && formData.amount && (
+            <div className="space-y-2">
+                <div className="p-2 bg-gray-50 rounded text-sm text-right text-gray-600 border border-gray-100">
+                    TL Karşılığı: <strong>{(Number(formData.amount) * Number(formData.exchangeRate)).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL</strong>
+                </div>
+                {Number(formData.exchangeRate) === 1 && (
+                    <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                        Dikkat: Kur 1.00 olarak girildi. Güncel kur alınamamış olabilir. Lütfen kuru kontrol ediniz.
+                    </div>
+                )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Belge No</label>

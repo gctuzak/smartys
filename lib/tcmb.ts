@@ -22,10 +22,10 @@ export async function getExchangeRates(): Promise<ExchangeRate | null> {
 
   if (existingRate) {
     return {
-      usdBuying: Number(existingRate.usdBuying),
-      usdSelling: Number(existingRate.usdSelling),
-      eurBuying: Number(existingRate.eurBuying),
-      eurSelling: Number(existingRate.eurSelling),
+      usdBuying: Number(existingRate.usd_buying),
+      usdSelling: Number(existingRate.usd_selling),
+      eurBuying: Number(existingRate.eur_buying),
+      eurSelling: Number(existingRate.eur_selling),
       date: existingRate.date,
     };
   }

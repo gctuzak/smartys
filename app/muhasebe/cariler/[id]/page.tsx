@@ -223,11 +223,18 @@ export default function CompanyAccountPage() {
                       <TableCell className="text-right text-red-600 font-medium">
                         {Number(t.borc) > 0 ? (
                           <div className="flex flex-col items-end">
-                            <span>{Number(t.borc).toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</span>
+                            <span>{Number(t.borc).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL</span>
                             {t.doviz_tutari && (
-                              <span className="text-xs text-gray-500 font-normal">
-                                ({Number(t.doviz_tutari).toLocaleString("tr-TR", { style: 'currency', currency: t.doviz_turu || 'USD' })})
-                              </span>
+                              <>
+                                <span className="text-xs font-medium text-blue-600">
+                                  {Number(t.doviz_tutari).toLocaleString("tr-TR", { style: 'currency', currency: t.doviz_turu || 'USD' })}
+                                </span>
+                                {t.doviz_kuru && (
+                                  <span className="text-[10px] text-gray-400">
+                                    Kur: {Number(t.doviz_kuru).toFixed(4)}
+                                  </span>
+                                )}
+                              </>
                             )}
                           </div>
                         ) : "-"}
@@ -235,11 +242,18 @@ export default function CompanyAccountPage() {
                       <TableCell className="text-right text-green-600 font-medium">
                         {Number(t.alacak) > 0 ? (
                           <div className="flex flex-col items-end">
-                            <span>{Number(t.alacak).toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</span>
+                            <span>{Number(t.alacak).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL</span>
                             {t.doviz_tutari && (
-                              <span className="text-xs text-gray-500 font-normal">
-                                ({Number(t.doviz_tutari).toLocaleString("tr-TR", { style: 'currency', currency: t.doviz_turu || 'USD' })})
-                              </span>
+                              <>
+                                <span className="text-xs font-medium text-blue-600">
+                                  {Number(t.doviz_tutari).toLocaleString("tr-TR", { style: 'currency', currency: t.doviz_turu || 'USD' })}
+                                </span>
+                                {t.doviz_kuru && (
+                                  <span className="text-[10px] text-gray-400">
+                                    Kur: {Number(t.doviz_kuru).toFixed(4)}
+                                  </span>
+                                )}
+                              </>
                             )}
                           </div>
                         ) : "-"}

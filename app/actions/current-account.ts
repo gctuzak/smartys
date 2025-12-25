@@ -13,62 +13,81 @@ export interface AddTransactionParams {
   islem_turu: "TAHSILAT" | "ODEME" | "ACILIS_BAKIYESI" | "VIRMAN";
   belge_no?: string;
   aciklama?: string;
-  tutar: number; // Frontend sends positive amount (TL)
+  tutar: number; // Frontend sends positive amount (in selected currency)
   tarih: string;
   order_id?: string;
   fatura_id?: string;
+  currency?: string; // 'TRY', 'USD', 'EUR'
+  exchangeRate?: number; // User provided rate or fetched
+}
+
+export async function getLatestRatesAction() {
+  try {
+    const rates = await getExchangeRates();
+    return { success: true, data: rates };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 }
 
 export async function addTransactionAction(params: AddTransactionParams) {
   try {
     let borc = 0;
     let alacak = 0;
-
-    if (params.islem_turu === "TAHSILAT") {
-      alacak = params.tutar;
-    } else if (params.islem_turu === "ODEME") {
-      borc = params.tutar;
-    } else if (params.islem_turu === "ACILIS_BAKIYESI") {
-        borc = params.tutar;
-    }
-
-    // Currency Conversion Logic
+    
+    // Determine Currency and Amounts
     let doviz_turu = null;
     let doviz_kuru = null;
     let doviz_tutari = null;
+    let tlAmount = params.tutar;
 
-    // 1. Determine Target Currency
-    let targetCurrency = 'TRY';
-    if (params.fatura_id) {
-        const { data: fatura } = await supabase.from('faturalar').select('para_birimi').eq('id', params.fatura_id).single();
-        if (fatura && fatura.para_birimi) targetCurrency = fatura.para_birimi;
-    } else if (params.order_id) {
-        const { data: order } = await supabase.from('orders').select('currency').eq('id', params.order_id).single();
-        if (order && order.currency) targetCurrency = order.currency;
+    // 1. Explicit Foreign Currency Transaction (User selected USD/EUR)
+    if (params.currency && params.currency !== 'TRY') {
+        doviz_turu = params.currency;
+        doviz_kuru = params.exchangeRate || 1; // Should be provided, fallback 1
+        doviz_tutari = params.tutar;
+        
+        // Calculate TL Equivalent
+        tlAmount = Number((params.tutar * doviz_kuru).toFixed(2));
+    } 
+    // 2. TRY Transaction (User selected TRY or default)
+    else {
+        // Check if we need to convert to FX for tracking (Invoice/Order context)
+        let targetCurrency = 'TRY';
+        if (params.fatura_id) {
+            const { data: fatura } = await supabase.from('faturalar').select('para_birimi').eq('id', params.fatura_id).single();
+            if (fatura && fatura.para_birimi) targetCurrency = fatura.para_birimi;
+        } else if (params.order_id) {
+            const { data: order } = await supabase.from('orders').select('currency').eq('id', params.order_id).single();
+            if (order && order.currency) targetCurrency = order.currency;
+        }
+
+        if (targetCurrency !== 'TRY') {
+             const rates = await getExchangeRates();
+             if (rates) {
+                 doviz_turu = targetCurrency;
+                 let rate = 1;
+                 
+                 // Use Selling Rate for conversion
+                 if (targetCurrency === 'USD') rate = rates.usdSelling;
+                 else if (targetCurrency === 'EUR') rate = rates.eurSelling;
+
+                 if (rate > 0) {
+                     doviz_kuru = rate;
+                     // Amount in FX = Amount (TL) / Rate
+                     doviz_tutari = Number((params.tutar / rate).toFixed(2));
+                 }
+             }
+        }
     }
 
-    // 2. Calculate if Foreign Currency
-    if (targetCurrency !== 'TRY') {
-        const rates = await getExchangeRates();
-        if (rates) {
-            doviz_turu = targetCurrency;
-            let rate = 1;
-            
-            // Determine rate based on currency and transaction type
-            // User requested: "Tahsilatlarda gelen TL ödemeyi biz tcmb'nin döviz satış kurundan ilgili para birimine çavirmeliyiz."
-            // So we use Selling Rate for both Collections (Tahsilat) and Payments (Odeme) when converting TL to FX.
-            if (targetCurrency === 'USD') {
-                rate = rates.usdSelling;
-            } else if (targetCurrency === 'EUR') {
-                rate = rates.eurSelling;
-            }
-
-            if (rate > 0) {
-                doviz_kuru = rate;
-                // Amount in FX = Amount (TL) / Rate
-                doviz_tutari = Number((params.tutar / rate).toFixed(2));
-            }
-        }
+    // Set Borç/Alacak based on TL Amount
+    if (params.islem_turu === "TAHSILAT") {
+      alacak = tlAmount;
+    } else if (params.islem_turu === "ODEME") {
+      borc = tlAmount;
+    } else if (params.islem_turu === "ACILIS_BAKIYESI") {
+        borc = tlAmount;
     }
 
     const { error } = await supabase.rpc("add_cari_hareket", {
