@@ -650,9 +650,8 @@ export async function getOrdersAction(
     const isAsc = sortOrder === "asc";
     
     if (sortField === "order_no") {
-      // Use created_at for order_no sorting to handle string comparison ("999" > "1000")
-      // assuming orders are created sequentially
-      query = query.order("created_at", { ascending: isAsc });
+      // Use order_no_int (generated numeric column) for correct numerical sorting
+      query = query.order("order_no_int", { ascending: isAsc });
     } else if (sortField) {
         query = query.order(sortField, { ascending: isAsc });
     } else {

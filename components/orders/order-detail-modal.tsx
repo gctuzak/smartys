@@ -4,27 +4,45 @@ import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { getOrderDetailsAction } from "@/app/actions/fetch-data";
 import { ProposalDetailModal } from "@/components/proposals/proposal-detail-modal";
-import { Loader2, FileText, User, Building2, Calendar, Banknote, Briefcase, ExternalLink } from "lucide-react";
+import { Loader2, FileText, User, Building2, Calendar, Banknote, Briefcase, ExternalLink, Pencil, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FileManager } from "@/components/shared/file-manager";
 import { formatDate } from "@/lib/utils";
+import { updateOrderAction } from "@/app/actions/update-order";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 interface OrderDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   orderId: string | null;
+  onUpdate?: () => void;
 }
 
-export function OrderDetailModal({ isOpen, onClose, orderId }: OrderDetailModalProps) {
+export function OrderDetailModal({ isOpen, onClose, orderId, onUpdate }: OrderDetailModalProps) {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  const [editForm, setEditForm] = useState({
+    amount: "",
+    currency: "EUR",
+    status: "pending",
+    notes: "",
+    projectName: "",
+    orderDate: "",
+  });
 
   useEffect(() => {
     if (isOpen && orderId) {
       fetchOrderDetails();
+      setIsEditing(false);
     } else {
       setOrder(null);
     }
@@ -37,6 +55,15 @@ export function OrderDetailModal({ isOpen, onClose, orderId }: OrderDetailModalP
       const result = await getOrderDetailsAction(orderId);
       if (result.success) {
         setOrder(result.data);
+        // Initialize form data
+        setEditForm({
+          amount: result.data.amount?.toString() || "",
+          currency: result.data.currency || "EUR",
+          status: result.data.status || "pending",
+          notes: result.data.notes || "",
+          projectName: result.data.project_name || "",
+          orderDate: result.data.order_date ? new Date(result.data.order_date).toISOString().split('T')[0] : "",
+        });
       } else {
         toast.error(result.error || "Sipariş detayları alınamadı");
         onClose();
@@ -49,18 +76,151 @@ export function OrderDetailModal({ isOpen, onClose, orderId }: OrderDetailModalP
     }
   };
 
+  const handleSave = async () => {
+    if (!orderId) return;
+    setSaving(true);
+    try {
+      const result = await updateOrderAction(orderId, {
+        amount: parseFloat(editForm.amount) || 0,
+        currency: editForm.currency,
+        status: editForm.status,
+        notes: editForm.notes,
+        projectName: editForm.projectName,
+        orderDate: editForm.orderDate ? new Date(editForm.orderDate).toISOString() : undefined,
+      });
+
+      if (result.success) {
+        toast.success("Sipariş güncellendi");
+        setIsEditing(false);
+        fetchOrderDetails();
+        if (onUpdate) onUpdate();
+      } else {
+        toast.error(result.error || "Güncelleme başarısız");
+      }
+    } catch (error) {
+      console.error("Error updating order:", error);
+      toast.error("Bir hata oluştu");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Sipariş Detayı ${order?.order_no ? '#' + order.order_no : ''}`}>
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title={
+        <div className="flex items-center justify-between w-full pr-8">
+          <span>Sipariş Detayı {order?.order_no ? '#' + order.order_no : ''}</span>
+          {!loading && order && !isEditing && (
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+              <Pencil className="w-4 h-4 mr-2" />
+              Düzenle
+            </Button>
+          )}
+        </div>
+      }
+    >
       {loading ? (
         <div className="flex items-center justify-center p-8">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         </div>
       ) : order ? (
         <div className="space-y-6">
-          {/* Header Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {isEditing ? (
+            <div className="space-y-4 bg-gray-50 p-4 rounded-lg border">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Tutar</Label>
+                  <Input 
+                    type="number" 
+                    value={editForm.amount} 
+                    onChange={(e) => setEditForm({...editForm, amount: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Para Birimi</Label>
+                  <Select 
+                    value={editForm.currency} 
+                    onValueChange={(value) => setEditForm({...editForm, currency: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TRY">TRY</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Sipariş Tarihi</Label>
+                  <Input 
+                    type="date" 
+                    value={editForm.orderDate} 
+                    onChange={(e) => setEditForm({...editForm, orderDate: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Durum</Label>
+                  <Select 
+                    value={editForm.status} 
+                    onValueChange={(value) => setEditForm({...editForm, status: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Bekliyor</SelectItem>
+                      <SelectItem value="approved">Onaylandı</SelectItem>
+                      <SelectItem value="completed">Tamamlandı</SelectItem>
+                      <SelectItem value="cancelled">İptal Edildi</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Proje Adı</Label>
+                <Input 
+                  value={editForm.projectName} 
+                  onChange={(e) => setEditForm({...editForm, projectName: e.target.value})}
+                  placeholder="Proje adı giriniz..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Notlar</Label>
+                <Textarea 
+                  value={editForm.notes} 
+                  onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
+                  placeholder="Notlar..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setIsEditing(false)} disabled={saving}>
+                  <X className="w-4 h-4 mr-2" />
+                  İptal
+                </Button>
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                  Kaydet
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+            {/* Header Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-gray-50 p-4 rounded-lg border">
               <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center">
                 <Building2 className="h-4 w-4 mr-2" /> Müşteri Bilgileri
@@ -193,6 +353,8 @@ export function OrderDetailModal({ isOpen, onClose, orderId }: OrderDetailModalP
               proposalId={order.proposal_id}
             />
           </div>
+          </>
+        )}
 
         </div>
       ) : (

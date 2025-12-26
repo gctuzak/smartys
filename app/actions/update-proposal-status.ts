@@ -28,6 +28,88 @@ export async function updateProposalStatusAction(id: string, status: string) {
 
     if (error) throw error;
 
+    if (status === 'converted_to_order') {
+      // Check if order already exists
+      const { data: existingOrder } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('proposal_id', id)
+        .single();
+
+      if (!existingOrder) {
+        // Fetch full proposal details
+        const { data: fullProposal } = await supabase
+          .from('proposals')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (fullProposal) {
+          // Get company representative
+          let representativeId = userId;
+          if (fullProposal.company_id) {
+            const { data: company } = await supabase
+              .from('companies')
+              .select('representative_id')
+              .eq('id', fullProposal.company_id)
+              .single();
+            if (company?.representative_id) {
+              representativeId = company.representative_id;
+            }
+          }
+
+          // Generate new Order No
+          const { data: orders } = await supabase
+            .from('orders')
+            .select('order_no');
+
+          let maxOrderNo = 0;
+          if (orders) {
+            orders.forEach(o => {
+              const num = parseInt(o.order_no);
+              if (!isNaN(num) && num > maxOrderNo) {
+                maxOrderNo = num;
+              }
+            });
+          }
+
+          const nextOrderNo = (maxOrderNo > 0 ? maxOrderNo + 1 : 1000).toString();
+
+          // Create Order
+          const { data: newOrder, error: createOrderError } = await supabase
+            .from('orders')
+            .insert({
+              order_no: nextOrderNo,
+              proposal_id: id,
+              company_id: fullProposal.company_id,
+              person_id: fullProposal.person_id,
+              representative_id: representativeId,
+              amount: fullProposal.grand_total,
+              currency: fullProposal.currency,
+              notes: fullProposal.notes,
+              status: 'pending',
+              order_date: new Date().toISOString(),
+            })
+            .select('id')
+            .single();
+
+          if (createOrderError) {
+            console.error("Error creating order:", createOrderError);
+          } else if (newOrder) {
+            await logActivity({
+              action: 'Sipariş Oluşturuldu',
+              entityType: 'orders',
+              entityId: newOrder.id,
+              entityName: `Sipariş #${nextOrderNo}`,
+              userId: userId,
+              companyId: fullProposal.company_id,
+              details: { proposalId: id, orderNo: nextOrderNo }
+            });
+          }
+        }
+      }
+    }
+
     await logActivity({
       action: 'Teklif Durumu Güncellendi',
       entityType: 'proposals',
