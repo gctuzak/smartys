@@ -1,9 +1,13 @@
 import { getDashboardStats, getRecentProposals, getRecentOrders, getUpcomingTasks } from "@/app/actions/dashboard";
+import { getUserMonthlySales, getUserProposalStatusDistribution, getUserActivityDistribution } from "@/app/actions/dashboard-charts";
 import { StatsGrid } from "@/components/dashboard/stats-grid";
 import { RecentProposals } from "@/components/dashboard/recent-proposals";
 import { RecentOrders } from "@/components/dashboard/recent-orders";
 import { UpcomingTasks } from "@/components/dashboard/upcoming-tasks";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import { SalesTrendChart } from "@/components/dashboard/charts/sales-trend-chart";
+import { ProposalStatusChart } from "@/components/dashboard/charts/proposal-status-chart";
+import { ActivityDistributionChart } from "@/components/dashboard/charts/activity-distribution-chart";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -15,12 +19,24 @@ export default async function DashboardPage() {
   }
 
   // Parallel data fetching
-  const [stats, recentProposals, recentOrders, upcomingTasks, userData] = await Promise.all([
+  const [
+    stats, 
+    recentProposals, 
+    recentOrders, 
+    upcomingTasks, 
+    userData,
+    monthlySales,
+    proposalStatusData,
+    activityData
+  ] = await Promise.all([
     getDashboardStats(),
     getRecentProposals(),
     getRecentOrders(),
     getUpcomingTasks(),
-    supabase.from('users').select('first_name').eq('id', session.userId).single()
+    supabase.from('users').select('first_name').eq('id', session.userId).single(),
+    getUserMonthlySales(),
+    getUserProposalStatusDistribution(),
+    getUserActivityDistribution()
   ]);
 
   const userName = userData.data?.first_name || "Kullanıcı";
@@ -37,6 +53,12 @@ export default async function DashboardPage() {
       </div>
       
       <StatsGrid stats={stats} />
+
+      {/* Charts Row */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        <SalesTrendChart data={monthlySales} />
+        <ProposalStatusChart data={proposalStatusData} />
+      </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 mt-6">
         <div className="col-span-1 md:col-span-2 lg:col-span-4 space-y-6">
@@ -44,6 +66,7 @@ export default async function DashboardPage() {
             <RecentOrders orders={recentOrders} />
         </div>
         <div className="col-span-1 md:col-span-2 lg:col-span-3 space-y-6">
+          <ActivityDistributionChart data={activityData} />
           <UpcomingTasks tasks={upcomingTasks} />
           <ActivityFeed />
         </div>
