@@ -7,6 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCompaniesAction } from "@/app/actions/fetch-data";
+import { FilterBar, FilterState, FilterOption } from "@/components/shared/filter-bar";
+
+const COMPANY_STATUS_OPTIONS: FilterOption[] = [
+  { value: 'overdue', label: 'Vadesi Geçmiş Borçlular' },
+];
 
 export default function CurrentAccountsPage() {
   const router = useRouter();
@@ -17,13 +22,19 @@ export default function CurrentAccountsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [sortField, setSortField] = useState("guncel_bakiye"); // Default sort by balance
   const [sortOrder, setSortOrder] = useState("asc"); // Ascending (Debt first? or mixed)
+  const [filters, setFilters] = useState<FilterState>({
+    status: [],
+    paymentStatus: [],
+    dateRange: {}
+  });
 
   const fetchCompanies = useCallback(async () => {
     try {
       setLoading(true);
-      // We reuse getCompaniesAction but we might want to filter only those with balance != 0 if needed.
-      // For now, list all companies as potential current accounts.
-      const result = await getCompaniesAction(page, 20, search, sortField, sortOrder);
+      // Pass filters to getCompaniesAction
+      const result = await getCompaniesAction(page, 20, search, sortField, sortOrder, {
+        overdueOnly: filters.status.includes('overdue')
+      });
       
       if (result.success) {
         setCompanies(result.data || []);
@@ -34,7 +45,7 @@ export default function CurrentAccountsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, sortField, sortOrder]);
+  }, [page, search, sortField, sortOrder, filters]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -67,7 +78,7 @@ export default function CurrentAccountsPage() {
       </div>
 
       <div className="bg-white rounded-lg border shadow-sm">
-        <div className="p-4 border-b flex gap-4">
+        <div className="p-4 border-b flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
           <div className="relative max-w-sm w-full">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
             <Input
@@ -77,6 +88,11 @@ export default function CurrentAccountsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <FilterBar 
+            className="w-full md:w-auto"
+            statusOptions={COMPANY_STATUS_OPTIONS}
+            onApply={setFilters}
+          />
         </div>
 
         <div className="relative">

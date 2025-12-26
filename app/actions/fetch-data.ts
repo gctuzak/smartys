@@ -147,7 +147,16 @@ export async function getProposalsAction(
   }
 }
 
-export async function getCompaniesAction(page = 1, pageSize = 20, search = "", sortField = "created_at", sortOrder = "desc") {
+export async function getCompaniesAction(
+  page = 1, 
+  pageSize = 20, 
+  search = "", 
+  sortField = "created_at", 
+  sortOrder = "desc",
+  filters?: {
+    overdueOnly?: boolean
+  }
+) {
   try {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -155,6 +164,30 @@ export async function getCompaniesAction(page = 1, pageSize = 20, search = "", s
     let query = supabase
       .from("companies")
       .select("*, representative:users(first_name, last_name)", { count: "exact" });
+
+    if (filters?.overdueOnly) {
+      // Find companies with overdue invoices (Receivables)
+      const now = new Date().toISOString();
+      
+      const { data: overdueInvoices } = await supabase
+        .from('faturalar')
+        .select('company_id')
+        .eq('tip', 'SATIS')
+        .gt('kalan_tutar', 0)
+        .lt('son_odeme_tarihi', now)
+        .not('company_id', 'is', null);
+
+      const companyIds = overdueInvoices?.map(i => i.company_id) || [];
+      
+      if (companyIds.length > 0) {
+        // De-duplicate
+        const uniqueIds = [...new Set(companyIds)];
+        query = query.in('id', uniqueIds);
+      } else {
+        // Force empty result if no overdue found
+        query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+      }
+    }
 
     if (search) {
       const sLower = search.toLocaleLowerCase('tr-TR');
