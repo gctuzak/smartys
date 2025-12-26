@@ -37,7 +37,8 @@ const navigationGroups = [
   {
     name: "Muhasebe",
     items: [
-      { name: "Faturalar", href: "/muhasebe/faturalar", icon: Receipt },
+      { name: "Alış Faturaları", href: "/muhasebe/faturalar/alis", icon: Receipt },
+      { name: "Satış Faturaları", href: "/muhasebe/faturalar/satis", icon: FileText },
       { name: "Cari Hesaplar", href: "/muhasebe/cariler", icon: Wallet },
       { name: "Stok Durumu", href: "/muhasebe/stok", icon: Warehouse },
       { name: "Döviz Kurları", href: "/muhasebe/kurlar", icon: Banknote },

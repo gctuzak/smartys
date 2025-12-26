@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Trash2, Loader2, FileText, Eye, ArrowUpDown, ArrowUp, ArrowDown, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { FilterBar, FilterState, FilterOption } from "@/components/shared/filter-bar";
 
 import { ProposalDetailModal } from "@/components/proposals/proposal-detail-modal";
 
@@ -16,6 +17,14 @@ const PROPOSAL_STATUSES = [
   { value: 'sent', label: 'Gönderilen Teklif', color: 'bg-blue-50 text-blue-700 border-blue-200' },
   { value: 'needs_revision', label: 'Revize edilecek teklif', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
   { value: 'converted_to_order', label: 'Siparişe dönüştü', color: 'bg-green-50 text-green-700 border-green-200' },
+];
+
+const PAYMENT_TERMS_OPTIONS: FilterOption[] = [
+  { value: 'Peşin', label: 'Peşin' },
+  { value: '%50 Peşin', label: '%50 Peşin' },
+  { value: '30 Gün', label: '30 Gün' },
+  { value: '45 Gün', label: '45 Gün' },
+  { value: '60 Gün', label: '60 Gün' },
 ];
 
 export default function ProposalsPage() {
@@ -29,11 +38,16 @@ export default function ProposalsPage() {
   const [initialIsEditing, setInitialIsEditing] = useState(false);
   const [sortField, setSortField] = useState("proposal_no");
   const [sortOrder, setSortOrder] = useState("desc");
+  const [filters, setFilters] = useState<FilterState>({
+    status: [],
+    paymentStatus: [],
+    dateRange: {}
+  });
 
   const fetchProposals = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await getProposalsAction(page, 20, search, sortField, sortOrder);
+      const result = await getProposalsAction(page, 20, search, sortField, sortOrder, filters);
       if (result.success) {
         setProposals(result.data || []);
         setTotalPages(result.totalPages || 1);
@@ -46,7 +60,7 @@ export default function ProposalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, sortField, sortOrder]);
+  }, [page, search, sortField, sortOrder, filters]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -109,13 +123,21 @@ export default function ProposalsPage() {
 
       <div className="bg-white rounded-lg border shadow-sm">
         <div className="p-4 border-b">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-            <Input
-              placeholder="Durum araması..."
-              className="pl-9"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+            <div className="relative max-w-sm w-full">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+              <Input
+                placeholder="Teklif no, firma, kişi veya durum ara..."
+                className="pl-9"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <FilterBar 
+              className="w-full md:w-auto"
+              statusOptions={PROPOSAL_STATUSES}
+              paymentStatusOptions={PAYMENT_TERMS_OPTIONS}
+              onApply={setFilters}
             />
           </div>
         </div>

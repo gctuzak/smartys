@@ -8,6 +8,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Trash2, Loader2, Eye, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { OrderDetailModal } from "@/components/orders/order-detail-modal";
+import { FilterBar, FilterState, FilterOption } from "@/components/shared/filter-bar";
+
+const ORDER_STATUS_OPTIONS: FilterOption[] = [
+  { value: 'pending', label: 'Beklemede' },
+  { value: 'completed', label: 'Tamamlandı' },
+  { value: 'cancelled', label: 'İptal' },
+];
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -19,11 +26,16 @@ export default function OrdersPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [sortField, setSortField] = useState("order_no");
   const [sortOrder, setSortOrder] = useState("desc");
+  const [filters, setFilters] = useState<FilterState>({
+    status: [],
+    paymentStatus: [],
+    dateRange: {}
+  });
 
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await getOrdersAction(page, 20, search, sortField, sortOrder);
+      const result = await getOrdersAction(page, 20, search, sortField, sortOrder, filters);
       if (result.success) {
         setOrders(result.data || []);
         setTotalPages(result.totalPages || 1);
@@ -36,7 +48,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, sortField, sortOrder]);
+  }, [page, search, sortField, sortOrder, filters]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -88,13 +100,20 @@ export default function OrdersPage() {
 
       <div className="bg-white rounded-lg border shadow-sm">
         <div className="p-4 border-b">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-            <Input
-              placeholder="Sipariş No veya Durum araması..."
-              className="pl-9"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+            <div className="relative max-w-sm w-full">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+              <Input
+                placeholder="Sipariş No veya Durum araması..."
+                className="pl-9"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <FilterBar 
+              className="w-full md:w-auto"
+              statusOptions={ORDER_STATUS_OPTIONS}
+              onApply={setFilters}
             />
           </div>
         </div>

@@ -136,7 +136,7 @@ export const products = pgTable("products", {
   defaultPrice: decimal("default_price", { precision: 10, scale: 2 }),
   currency: text("currency").default("EUR"),
   vatRate: integer("vat_rate").default(20),
-  stockQuantity: integer("stok_miktari").default(0), // New: Stok Miktarı
+  stockQuantity: decimal("stok_miktari", { precision: 10, scale: 2 }).default("0"), // New: Stok Miktarı
   criticalStockLevel: integer("kritik_stok_seviyesi").default(10), // New: Kritik Stok Seviyesi
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -164,7 +164,7 @@ export const faturaKalemleri = pgTable("fatura_kalemleri", {
   faturaId: uuid("fatura_id").references(() => faturalar.id, { onDelete: "cascade" }).notNull(),
   productId: uuid("product_id").references(() => products.id),
   aciklama: text("aciklama").notNull(),
-  miktar: integer("miktar").notNull(),
+  miktar: decimal("miktar", { precision: 10, scale: 2 }).notNull(),
   birim: text("birim").default("Adet"),
   birimFiyat: decimal("birim_fiyat", { precision: 10, scale: 2 }).notNull(),
   kdvOrani: integer("kdv_orani").default(20),
@@ -176,7 +176,7 @@ export const stokHareketleri = pgTable("stok_hareketleri", {
   productId: uuid("product_id").references(() => products.id).notNull(),
   faturaId: uuid("fatura_id").references(() => faturalar.id), // Opsiyonel, manuel hareket olabilir
   islemTuru: text("islem_turu").notNull(), // GIRIS, CIKIS
-  miktar: integer("miktar").notNull(),
+  miktar: decimal("miktar", { precision: 10, scale: 2 }).notNull(),
   tarih: timestamp("tarih").defaultNow().notNull(),
   aciklama: text("aciklama"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

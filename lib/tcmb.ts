@@ -101,7 +101,7 @@ async function fetchTCMBRates(date: Date): Promise<ExchangeRate | null> {
   console.log(`Fetching rates from: ${url}`);
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!response.ok) {
         if (response.status === 404) {
             console.warn(`Rates not found for ${date.toISOString().split('T')[0]} (Likely Holiday). Trying previous day.`);
@@ -132,8 +132,36 @@ async function fetchTCMBRates(date: Date): Promise<ExchangeRate | null> {
     }
   } catch (e) {
     console.error("Fetch error:", e);
+    // Try fallback
+    return fetchFallbackRates();
   }
   return null;
+}
+
+async function fetchFallbackRates(): Promise<ExchangeRate | null> {
+    try {
+        console.log("Attempting fallback fetch...");
+        const response = await fetch("https://hasanadiguzel.com.tr/api/kurgetir");
+        if (!response.ok) return null;
+        
+        const data = await response.json();
+        const items = data.TCMB_AnlikKurBilgileri;
+        const usd = items.find((i: any) => i.CurrencyName === "US DOLLAR");
+        const eur = items.find((i: any) => i.CurrencyName === "EURO");
+        
+        if (usd && eur) {
+            return {
+                usdBuying: usd.ForexBuying,
+                usdSelling: usd.ForexSelling,
+                eurBuying: eur.ForexBuying,
+                eurSelling: eur.ForexSelling,
+                date: formatDateForDB(new Date()) 
+            };
+        }
+    } catch (err) {
+        console.error("Fallback error:", err);
+    }
+    return null;
 }
 
 function getTCMBUrl(date: Date): string {

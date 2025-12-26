@@ -10,8 +10,19 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 console.log("Supabase URL present:", !!process.env.SUPABASE_URL);
 console.log("Supabase Key present:", !!process.env.SUPABASE_ANON_KEY);
 
-export async function getProposalsAction(page = 1, pageSize = 20, search = "", sortField = "proposal_no", sortOrder = "desc") {
-  console.log("getProposalsAction called", { page, pageSize, search, sortField, sortOrder });
+export async function getProposalsAction(
+  page = 1, 
+  pageSize = 20, 
+  search = "", 
+  sortField = "proposal_no", 
+  sortOrder = "desc",
+  filters?: {
+    status?: string[],
+    dateRange?: { from?: string, to?: string },
+    paymentStatus?: string[]
+  }
+) {
+  console.log("getProposalsAction called", { page, pageSize, search, sortField, sortOrder, filters });
   try {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -38,6 +49,28 @@ export async function getProposalsAction(page = 1, pageSize = 20, search = "", s
           title
         )
       `, { count: "exact" });
+
+    // Apply filters
+    if (filters?.status && filters.status.length > 0) {
+      query = query.in("status", filters.status);
+    }
+
+    if (filters?.paymentStatus && filters.paymentStatus.length > 0) {
+      query = query.in("payment_terms", filters.paymentStatus);
+    }
+
+    if (filters?.dateRange?.from) {
+      query = query.gte("proposal_date", filters.dateRange.from);
+    }
+
+    if (filters?.dateRange?.to) {
+      let toDate = filters.dateRange.to;
+      // If it looks like YYYY-MM-DD (length 10), append end of day time
+      if (toDate.length === 10) {
+        toDate += " 23:59:59";
+      }
+      query = query.lte("proposal_date", toDate);
+    }
 
     if (search) {
       const sLower = search.toLocaleLowerCase('tr-TR');
@@ -533,7 +566,17 @@ export async function deletePersonAction(id: string) {
     }
 }
 
-export async function getOrdersAction(page = 1, pageSize = 20, search = "", sortField = "order_no", sortOrder = "desc") {
+export async function getOrdersAction(
+  page = 1, 
+  pageSize = 20, 
+  search = "", 
+  sortField = "order_no", 
+  sortOrder = "desc",
+  filters?: {
+    status?: string[],
+    dateRange?: { from?: string, to?: string }
+  }
+) {
   try {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -546,6 +589,23 @@ export async function getOrdersAction(page = 1, pageSize = 20, search = "", sort
         person:persons (first_name, last_name),
         representative:users (first_name, last_name)
       `, { count: "exact" });
+
+    // Apply filters
+    if (filters?.status && filters.status.length > 0) {
+      query = query.in("status", filters.status);
+    }
+
+    if (filters?.dateRange?.from) {
+      query = query.gte("order_date", filters.dateRange.from);
+    }
+
+    if (filters?.dateRange?.to) {
+      let toDate = filters.dateRange.to;
+      if (toDate.length === 10) {
+        toDate += " 23:59:59";
+      }
+      query = query.lte("order_date", toDate);
+    }
 
     if (search) {
       const sLower = search.toLocaleLowerCase('tr-TR');

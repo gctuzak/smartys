@@ -160,3 +160,20 @@ export async function getCompanyTransactionsAction(companyId: string) {
     return { success: false, error: error.message };
   }
 }
+
+export async function getCompanyOrdersAction(companyId: string) {
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("id, order_no, amount, status")
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error("Get company orders error:", error);
+    return { success: false, error: error.message };
+  }
+}
