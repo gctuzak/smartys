@@ -46,6 +46,8 @@ interface InvoiceBuilderProps {
   initialInvoiceId?: string;
 }
 
+import { AverageRateCalculator } from "./average-rate-calculator";
+
 export default function InvoiceBuilder({ initialInvoiceId }: InvoiceBuilderProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -61,6 +63,7 @@ export default function InvoiceBuilder({ initialInvoiceId }: InvoiceBuilderProps
   const [invoiceType, setInvoiceType] = useState("SATIS");
   const [invoiceNo, setInvoiceNo] = useState(`F${new Date().getFullYear()}${Math.floor(Math.random() * 10000)}`);
   const [genelIskonto, setGenelIskonto] = useState(0);
+  const [invoiceNotes, setInvoiceNotes] = useState("");
   
   // Parsed Data State
   const [parsedSupplier, setParsedSupplier] = useState<{name: string, taxNo?: string, taxOffice?: string, address?: string} | null>(null);
@@ -505,7 +508,7 @@ export default function InvoiceBuilder({ initialInvoiceId }: InvoiceBuilderProps
           tip: invoiceType as "SATIS" | "ALIS",
           para_birimi: currency,
           doviz_kuru: exchangeRate,
-          notlar: "Web üzerinden güncellendi." + (parsedSupplier && !selectedCompanyId ? ` - Tedarikçi: ${parsedSupplier.name}` : ""),
+          notlar: (invoiceNotes ? invoiceNotes + " " : "") + "Web üzerinden güncellendi." + (parsedSupplier && !selectedCompanyId ? ` - Tedarikçi: ${parsedSupplier.name}` : ""),
           items: rpcItems
         });
       } else {
@@ -517,7 +520,7 @@ export default function InvoiceBuilder({ initialInvoiceId }: InvoiceBuilderProps
           tip: invoiceType as "SATIS" | "ALIS",
           para_birimi: currency,
           doviz_kuru: exchangeRate,
-          notlar: "Web üzerinden oluşturuldu." + (parsedSupplier && !selectedCompanyId ? ` - Tedarikçi: ${parsedSupplier.name}` : ""),
+          notlar: (invoiceNotes ? invoiceNotes + " " : "") + "Web üzerinden oluşturuldu." + (parsedSupplier && !selectedCompanyId ? ` - Tedarikçi: ${parsedSupplier.name}` : ""),
           items: rpcItems
         });
       }
@@ -808,11 +811,36 @@ export default function InvoiceBuilder({ initialInvoiceId }: InvoiceBuilderProps
             <span>{totals.grandTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {currency}</span>
           </div>
           {currency !== "TRY" && (
-            <div className="text-right text-sm text-gray-500 mt-1">
-              (Yaklaşık {(totals.grandTotal * exchangeRate).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺)
+            <div className="space-y-2 mt-2 pt-2 border-t">
+              <div className="text-right text-sm text-gray-500">
+                (Yaklaşık {(totals.grandTotal * exchangeRate).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺)
+              </div>
+              <div className="flex justify-end">
+                <AverageRateCalculator
+                  totalAmountFX={totals.grandTotal}
+                  currency={currency}
+                  invoiceDate={invoiceDate}
+                  currentRate={exchangeRate}
+                  onApply={(desc) => {
+                    setInvoiceNotes(prev => (prev ? prev + "\n\n" : "") + desc);
+                    toast.success("Ortalama kur hesabı notlara eklendi.");
+                  }}
+                />
+              </div>
             </div>
           )}
         </div>
+      </div>
+
+      {/* Fatura Notları */}
+      <div className="mb-8">
+        <label className="block text-sm font-medium text-gray-700 mb-1">Fatura Notları</label>
+        <textarea
+          className="w-full border rounded-md p-2 h-24 text-sm"
+          placeholder="Fatura notları..."
+          value={invoiceNotes}
+          onChange={(e) => setInvoiceNotes(e.target.value)}
+        />
       </div>
 
       {/* Aksiyonlar */}
