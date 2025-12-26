@@ -176,9 +176,11 @@ export default function UsersPage() {
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         user.role === 'admin' 
                           ? 'bg-purple-100 text-purple-800' 
-                          : 'bg-green-100 text-green-800'
+                          : user.role === 'finance'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-green-100 text-green-800'
                       }`}>
-                        {user.role === 'admin' ? 'Yönetici' : 'Temsilci'}
+                        {user.role === 'admin' ? 'Yönetici' : user.role === 'finance' ? 'Finans' : 'Temsilci'}
                       </span>
                     </TableCell>
                     <TableCell>{new Date(user.created_at).toLocaleDateString('tr-TR')}</TableCell>

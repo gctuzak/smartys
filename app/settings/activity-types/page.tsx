@@ -9,7 +9,7 @@ export default async function ActivityTypesPage() {
   // Basic role check - adjust roles as per actual system values (admin, manager, etc.)
   // If role is undefined or not authorized, redirect.
   // Assuming 'representative' is the default restricted role.
-  if (!session || (session.role !== "admin" && session.role !== "manager")) {
+  if (!session || (session.role !== "admin" && session.role !== "manager" && session.role !== "finance")) {
      // redirect("/"); // Temporarily disabled strict check until roles are confirmed, or uncomment to enforce.
      // console.log("User role:", session?.role);
   }
