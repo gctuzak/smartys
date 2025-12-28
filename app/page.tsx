@@ -57,6 +57,11 @@ export default async function DashboardPage() {
       
       <StatsGrid stats={stats} />
 
+      {/* Calendar Section */}
+      <div className="bg-white p-6 rounded-lg border shadow-sm">
+        <DashboardCalendar />
+      </div>
+
       {/* Charts Row */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         <SalesTrendChart data={monthlySales} />
