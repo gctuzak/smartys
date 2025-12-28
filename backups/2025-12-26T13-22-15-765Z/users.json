@@ -1,0 +1,32 @@
+[
+  {
+    "id": "19db6052-1037-40ed-9361-92bc68870337",
+    "first_name": "Büşra",
+    "last_name": "Onak",
+    "email": "busra.onak@smartys.com",
+    "phone": null,
+    "role": "representative",
+    "created_at": "2025-12-26T08:52:48.937Z",
+    "password": "123456"
+  },
+  {
+    "id": "4c34564f-8249-4529-b6a2-042d0c2970f2",
+    "first_name": "Funda",
+    "last_name": "Varlı Tuzak",
+    "email": "funda@itemyapi.com",
+    "phone": "+905332521351",
+    "role": "finance",
+    "created_at": "2025-12-26T08:55:49.455Z",
+    "password": "123456"
+  },
+  {
+    "id": "c09ab4a3-8edc-4a3c-95c2-f98a9bd20c39",
+    "first_name": "Günay",
+    "last_name": "Çağrı Tuzak",
+    "email": "gunay@itemyapi.com",
+    "phone": "+905338130005",
+    "role": "admin",
+    "created_at": "2025-12-26T08:54:24.508Z",
+    "password": "123456"
+  }
+]

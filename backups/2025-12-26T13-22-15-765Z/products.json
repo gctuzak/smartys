@@ -1,0 +1,17 @@
+[
+  {
+    "id": "63dad298-6ed4-470a-b823-3f882fa2693c",
+    "name": "Gergi Tavan",
+    "code": "GT.001",
+    "description": "Translucent Gergi Tavan",
+    "unit": "m2",
+    "cost": "0.00",
+    "default_price": "50.00",
+    "currency": "EUR",
+    "vat_rate": 20,
+    "created_at": "2025-12-24T08:10:41.253Z",
+    "type": "product",
+    "stok_miktari": "1000.00",
+    "kritik_stok_seviyesi": 100
+  }
+]

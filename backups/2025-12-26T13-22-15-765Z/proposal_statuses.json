@@ -1,0 +1,47 @@
+[
+  {
+    "id": "16ec9fed-6318-4089-a7bd-98b2fe310797",
+    "name": "Taslak",
+    "color": "#9ca3af",
+    "order": 1,
+    "is_default": true,
+    "is_active": true,
+    "created_at": "2025-12-26T08:12:17.032Z"
+  },
+  {
+    "id": "14e5ca66-48cc-4f3b-a467-013890450c78",
+    "name": "Müşteride",
+    "color": "#3b82f6",
+    "order": 2,
+    "is_default": false,
+    "is_active": true,
+    "created_at": "2025-12-26T08:12:17.175Z"
+  },
+  {
+    "id": "b63b1c25-3ae0-462e-b77f-7500b3c06335",
+    "name": "Revize İstendi",
+    "color": "#f59e0b",
+    "order": 3,
+    "is_default": false,
+    "is_active": true,
+    "created_at": "2025-12-26T08:12:17.292Z"
+  },
+  {
+    "id": "cec62f8c-07a9-4ae1-9640-1d8299dfd5da",
+    "name": "Onaylandı",
+    "color": "#22c55e",
+    "order": 4,
+    "is_default": false,
+    "is_active": true,
+    "created_at": "2025-12-26T08:12:17.408Z"
+  },
+  {
+    "id": "fba64f6f-5ea7-44fe-b1eb-536d2dc0e549",
+    "name": "Reddedildi",
+    "color": "#ef4444",
+    "order": 5,
+    "is_default": false,
+    "is_active": true,
+    "created_at": "2025-12-26T08:12:17.503Z"
+  }
+]

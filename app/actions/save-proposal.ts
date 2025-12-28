@@ -4,10 +4,11 @@ import { createClient } from '@supabase/supabase-js';
 import { ParsedData } from "@/types";
 import { getSession } from "@/lib/auth";
 import { logActivity } from "@/lib/logger";
+import { generatePersonCode, generateCompanyCode } from "./code-utils";
 
 // Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function saveProposalAction(data: ParsedData) {
@@ -59,6 +60,8 @@ export async function saveProposalAction(data: ParsedData) {
       } else {
         const getString = (obj: any, key: string) => typeof obj[key] === 'string' ? obj[key] : undefined;
         
+        const { code } = await generateCompanyCode();
+
         const { data: newCompany, error: createError } = await supabase
           .from('companies')
           .insert({
@@ -70,6 +73,7 @@ export async function saveProposalAction(data: ParsedData) {
             phone: contactInfo.phone,
             email: contactInfo.email,
             website: getString(contactInfo, 'website'),
+            code
           })
           .select('id')
           .single();
@@ -133,6 +137,8 @@ export async function saveProposalAction(data: ParsedData) {
 
       } else {
         // Create new person
+        const { code } = await generatePersonCode();
+        
         const { data: newPerson, error: createPersonError } = await supabase
           .from('persons')
           .insert({
@@ -142,6 +148,7 @@ export async function saveProposalAction(data: ParsedData) {
             phone: data.person.phone,
             title: data.person.title,
             company_id: companyId || null, // Can be null now
+            code
           })
           .select('id')
           .single();

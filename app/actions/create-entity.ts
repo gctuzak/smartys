@@ -2,12 +2,15 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { Company, Person } from "@/types";
+import { generatePersonCode, generateCompanyCode } from "./code-utils";
 
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function createCompanyAction(company: Partial<Company>) {
+  const { code } = await generateCompanyCode();
+
   const { data, error } = await supabase
     .from('companies')
     .insert({
@@ -19,6 +22,7 @@ export async function createCompanyAction(company: Partial<Company>) {
       phone: company.phone,
       email: company.email,
       website: company.website,
+      code
     })
     .select()
     .single();
@@ -28,6 +32,8 @@ export async function createCompanyAction(company: Partial<Company>) {
 }
 
 export async function createPersonAction(person: Partial<Person>) {
+  const { code } = await generatePersonCode();
+
   const { data, error } = await supabase
     .from('persons')
     .insert({
@@ -37,6 +43,7 @@ export async function createPersonAction(person: Partial<Person>) {
       phone: person.phone,
       title: person.title,
       company_id: person.companyId,
+      code
     })
     .select()
     .single();

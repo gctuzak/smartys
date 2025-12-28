@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
+import { generatePersonCode, generateCompanyCode } from "./code-utils";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY!;
@@ -24,6 +25,8 @@ export async function createCompanyWithPersonAction(data: {
     }
 }) {
     try {
+        const { code: companyCode } = await generateCompanyCode();
+
         // Create Company
         const { data: newCompany, error: companyError } = await supabase.from('companies').insert({
             name: data.company.name,
@@ -32,6 +35,7 @@ export async function createCompanyWithPersonAction(data: {
             email1: data.company.email,
             phone1: data.company.phone,
             address: data.company.city ? `${data.company.address || ''} ${data.company.city}`.trim() : data.company.address,
+            code: companyCode
         }).select().single();
 
         if (companyError) throw companyError;
@@ -44,13 +48,16 @@ export async function createCompanyWithPersonAction(data: {
             const first_name = parts[0];
             const last_name = parts.slice(1).join(' ') || '';
 
+            const { code } = await generatePersonCode();
+
             const { data: createdPerson, error: personError } = await supabase.from('persons').insert({
                 first_name: first_name,
                 last_name: last_name,
                 email1: data.person.email,
                 phone1: data.person.phone,
                 title: data.person.title,
-                company_id: newCompany.id
+                company_id: newCompany.id,
+                code
             }).select().single();
 
             if (personError) {
@@ -80,13 +87,16 @@ export async function createPersonForCompanyAction(companyId: string, person: {
         const first_name = parts[0];
         const last_name = parts.slice(1).join(' ') || '';
 
+        const { code } = await generatePersonCode();
+
         const { data: newPerson, error } = await supabase.from('persons').insert({
             first_name: first_name,
             last_name: last_name,
             email1: person.email,
             phone1: person.phone,
             title: person.title,
-            company_id: companyId
+            company_id: companyId,
+            code
         }).select().single();
 
         if (error) throw error;

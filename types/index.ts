@@ -14,6 +14,7 @@ export interface Company {
 export interface Person {
   id?: string;
   companyId: string;
+  code?: string | null;
   firstName: string;
   lastName: string;
   email?: string;

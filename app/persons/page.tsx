@@ -17,8 +17,8 @@ export default function PersonsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<any>(null);
-  const [sortField, setSortField] = useState("first_name");
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortField, setSortField] = useState("created_at");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   const fetchPersons = useCallback(async () => {
     try {
@@ -129,6 +129,7 @@ export default function PersonsPage() {
                   </div>
                 </TableHead>
                 <TableHead>Şirket</TableHead>
+                <TableHead>Vergi / TCKN</TableHead>
                 <TableHead onClick={() => handleSort("title")} className="cursor-pointer hover:bg-gray-100">
                   <div className="flex items-center">
                     Ünvan <SortIcon field="title" />
@@ -143,7 +144,7 @@ export default function PersonsPage() {
             <TableBody>
               {persons.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                     Kişi bulunamadı.
                   </TableCell>
                 </TableRow>
@@ -154,7 +155,7 @@ export default function PersonsPage() {
                     className="cursor-pointer hover:bg-gray-50"
                     onClick={() => handleEdit(person)}
                   >
-                    <TableCell className="font-mono text-sm">{person.code || "-"}</TableCell>
+                    <TableCell className="font-mono text-sm">{person.code?.replace(/^K/, '') || "-"}</TableCell>
                     <TableCell className="font-medium flex items-center gap-2">
                       <User className="w-4 h-4 text-gray-400" />
                       {person.first_name} {person.last_name}
@@ -164,6 +165,20 @@ export default function PersonsPage() {
                         <Building2 className="w-3 h-3 text-gray-400" />
                         {person.company?.name || "-"}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {person.tckn ? (
+                         <div className="text-sm">
+                           <span className="font-medium">TCKN:</span> {person.tckn}
+                         </div>
+                      ) : person.company?.tax_no ? (
+                        <div className="text-sm">
+                          <div className="font-medium">{person.company.tax_no}</div>
+                          <div className="text-xs text-gray-500">{person.company.tax_office}</div>
+                        </div>
+                      ) : (
+                        "-"
+                      )}
                     </TableCell>
                     <TableCell>{person.title || "-"}</TableCell>
                     <TableCell>{person.phone1 || "-"}</TableCell>

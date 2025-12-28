@@ -1,9 +1,14 @@
 'use server'
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
 import { getSession } from "@/lib/auth";
 import { startOfMonth, subMonths, format } from "date-fns";
 import { tr } from "date-fns/locale";
+
+// Initialize Admin Client for Server Actions
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export interface DashboardStats {
   user: {
@@ -25,6 +30,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   if (!session) throw new Error("Unauthorized");
 
   const userId = session.userId;
+  // TODO: Remove this debug override once confirmed
+  // If user is admin or we want to show ALL data regardless of owner:
+  const showAllData = true; 
 
   // --- USER STATS ---
 
@@ -32,48 +40,51 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   // Logic: Proposals linked to companies where representative_id is current user
   // OR owner_email matches (if we had user email, but we have ID). 
   // Let's rely on company relationship for now as it's cleaner in SQL.
-  const { count: myProposalsCount } = await supabase
+  let myProposalsQuery = supabase
     .from('proposals')
-    .select('id, companies!inner(representative_id)', { count: 'exact', head: true })
-    .eq('companies.representative_id', userId);
-
-  // 2. My Orders (Count & Amount)
-  let myOrders: { amount: any }[] = [];
-  let myPage = 0;
-  const myPageSize = 1000;
-  let myHasMore = true;
-
-  while (myHasMore) {
-    const { data, error } = await supabase
-      .from('orders')
-      .select('amount')
-      .eq('representative_id', userId)
-      .range(myPage * myPageSize, (myPage + 1) * myPageSize - 1);
-
-    if (error) {
-      console.error("Error fetching my orders:", error);
-      break;
-    }
-
-    if (data && data.length > 0) {
-      myOrders = [...myOrders, ...data];
-      if (data.length < myPageSize) myHasMore = false;
-    } else {
-      myHasMore = false;
-    }
-    myPage++;
+    .select('id, companies!inner(representative_id)', { count: 'exact', head: true });
+    
+  if (!showAllData) {
+     myProposalsQuery = myProposalsQuery.eq('companies.representative_id', userId);
   }
 
-  const myOrdersCount = myOrders.length;
-  const myOrderAmount = myOrders.reduce((sum, order) => sum + (Number(order.amount) || 0), 0);
+  const { count: myProposalsCount } = await myProposalsQuery;
+
+  // 2. My Orders (Count & Amount)
+  // Use sum aggregate for much faster performance
+  // If showing all data, we can't use the specific RPC easily unless we modify it or use raw query
+  // Let's use raw query for flexibility now
+  
+  let myOrdersCount = 0;
+  let myOrderAmount = 0;
+
+  if (showAllData) {
+      // Fetch stats for ALL orders
+      const { data: allStats } = await supabase.rpc('get_total_orders_stats');
+      if (allStats && allStats[0]) {
+          myOrdersCount = allStats[0].count;
+          myOrderAmount = allStats[0].total_amount;
+      }
+  } else {
+      const { data: myOrdersData, error: myOrdersError } = await supabase.rpc('get_my_orders_stats', { user_id: userId });
+      if (!myOrdersError && myOrdersData) {
+         myOrdersCount = myOrdersData[0]?.count || 0;
+         myOrderAmount = myOrdersData[0]?.total_amount || 0;
+      }
+  }
 
   // 3. My Pending Tasks
-  const { count: myPendingTasks } = await supabase
+  let myTasksQuery = supabase
     .from('activities')
     .select('id', { count: 'exact', head: true })
-    .eq('assigned_to', userId)
     .neq('status', 'COMPLETED')
     .neq('status', 'CANCELED');
+    
+  if (!showAllData) {
+      myTasksQuery = myTasksQuery.eq('assigned_to', userId);
+  }
+  
+  const { count: myPendingTasks } = await myTasksQuery;
 
 
   // --- COMPANY STATS ---
@@ -84,33 +95,32 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     .select('id', { count: 'exact', head: true });
 
   // 2. Total Orders
-  let allOrders: { amount: any }[] = [];
-  let page = 0;
-  const pageSize = 1000;
-  let hasMore = true;
+  // Use sum aggregate for much faster performance
+  const { data: allOrdersData, error: allOrdersError } = await supabase.rpc('get_total_orders_stats');
 
-  while (hasMore) {
-    const { data, error } = await supabase
+  let totalOrders = 0;
+  let totalOrderAmount = 0;
+
+  if (!allOrdersError && allOrdersData) {
+     totalOrders = allOrdersData[0]?.count || 0;
+     totalOrderAmount = allOrdersData[0]?.total_amount || 0;
+  } else {
+    // Fallback
+    const { count } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true });
+    totalOrders = count || 0;
+
+    // Temporary: Just fetch last 1000 orders for stats
+    const { data } = await supabase
       .from('orders')
       .select('amount')
-      .range(page * pageSize, (page + 1) * pageSize - 1);
-
-    if (error) {
-      console.error("Error fetching orders:", error);
-      break;
+      .limit(1000);
+      
+    if (data) {
+      totalOrderAmount = data.reduce((sum, order) => sum + (Number(order.amount) || 0), 0);
     }
-
-    if (data && data.length > 0) {
-      allOrders = [...allOrders, ...data];
-      if (data.length < pageSize) hasMore = false;
-    } else {
-      hasMore = false;
-    }
-    page++;
   }
-    
-  const totalOrders = allOrders.length;
-  const totalOrderAmount = allOrders.reduce((sum, order) => sum + (Number(order.amount) || 0), 0);
 
   // 3. Active Customers (Companies)
   const { count: activeCustomers } = await supabase
@@ -138,6 +148,7 @@ export async function getRecentProposals() {
   if (!session) return [];
 
   // Fetch proposals for companies owned by the user
+  // TEMPORARY: Removed user filter to debug data visibility
   const { data } = await supabase
     .from('proposals')
     .select(`
@@ -155,7 +166,7 @@ export async function getRecentProposals() {
         last_name
       )
     `)
-    .eq('companies.representative_id', session.userId)
+    // .eq('companies.representative_id', session.userId)
     .order('proposal_no', { ascending: false })
     .limit(5);
 
@@ -166,6 +177,7 @@ export async function getRecentOrders() {
   const session = await getSession();
   if (!session) return [];
 
+  // TEMPORARY: Removed user filter to debug data visibility
   const { data } = await supabase
     .from('orders')
     .select(`
@@ -183,8 +195,8 @@ export async function getRecentOrders() {
         last_name
       )
     `)
-    .eq('representative_id', session.userId)
-    .order('order_no_int', { ascending: false })
+    // .eq('representative_id', session.userId)
+    .order('created_at', { ascending: false })
     .limit(5);
 
   return data || [];
@@ -194,6 +206,7 @@ export async function getUpcomingTasks() {
   const session = await getSession();
   if (!session) return [];
 
+  // TEMPORARY: Removed user filter to debug data visibility
   const { data } = await supabase
     .from('activities')
     .select(`
@@ -202,11 +215,35 @@ export async function getUpcomingTasks() {
         *
       )
     `)
-    .eq('assigned_to', session.userId)
+    // .eq('assigned_to', session.userId)
     .neq('status', 'COMPLETED')
     .neq('status', 'CANCELED')
     .order('due_date', { ascending: true })
     .limit(5);
+
+  return data || [];
+}
+
+export async function getCalendarActivities(start: Date, end: Date) {
+  const session = await getSession();
+  if (!session) return [];
+
+  const { data } = await supabase
+    .from('activities')
+    .select(`
+      *,
+      companies (
+        name
+      ),
+      persons (
+        first_name,
+        last_name
+      )
+    `)
+    .eq('assigned_to', session.userId)
+    .gte('due_date', start.toISOString())
+    .lte('due_date', end.toISOString())
+    .neq('status', 'CANCELED'); // Show COMPLETED tasks in calendar, but maybe style differently
 
   return data || [];
 }

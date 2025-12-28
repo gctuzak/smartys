@@ -1,34 +1,57 @@
 
-import * as XLSX from 'xlsx';
-import fs from 'fs';
+import ExcelJS from 'exceljs';
+import path from 'path';
 
-const filePath = '/Users/gunaycagrituzak/Desktop/smartys/smartys/excel_data/teklifaktar.xlsx';
+async function analyzeExcel() {
+  const workbook = new ExcelJS.Workbook();
+  const filePath = '/Users/gunaycagrituzak/Desktop/smartys/smartys/excel_data/kapsamlliliste.xlsx';
+  
+  await workbook.xlsx.readFile(filePath);
+  const sheet = workbook.getWorksheet(1);
 
-function inspectExcel() {
-  try {
-    const fileBuffer = fs.readFileSync(filePath);
-    const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    
-    // Get headers (first row)
-    const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:A1');
-    const headers = [];
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const cell = sheet[XLSX.utils.encode_cell({ r: range.s.r, c: C })];
-      if (cell && cell.v) headers.push(cell.v);
-    }
-
-    // Get first few rows of data to check content
-    const data = XLSX.utils.sheet_to_json(sheet, { header: headers, range: 1, defval: null });
-    
-    console.log("Headers:", headers);
-    console.log("Total Rows:", data.length);
-    console.log("First 3 Rows Sample:", JSON.stringify(data.slice(0, 3), null, 2));
-
-  } catch (error) {
-    console.error("Error reading Excel file:", error);
+  if (!sheet) {
+    console.log("Sheet not found");
+    return;
   }
+
+  const headers: string[] = [];
+  sheet.getRow(1).eachCell((cell, colNumber) => {
+    headers[colNumber] = String(cell.value);
+  });
+
+  console.log("Headers:", headers.filter(h => h));
+
+  const distinctTypes = new Set();
+  const sampleRows: any[] = [];
+
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return;
+    
+    const rowData: any = {};
+    row.eachCell((cell, colNumber) => {
+      if (headers[colNumber]) {
+        rowData[headers[colNumber]] = cell.value;
+      }
+    });
+
+    // Check "Kişi/Kurum Türü" (if it exists) or "İlişki Türü"
+    // Based on previous reads, "İlişki Türü" was mentioned.
+    // Let's look for type-indicating columns.
+    
+    // Previous analysis mentioned:
+    // "Kişi/Kurum Türü"
+    
+    if (rowData['Kişi/Kurum Türü']) {
+        distinctTypes.add(rowData['Kişi/Kurum Türü']);
+    }
+    
+    if (sampleRows.length < 3) {
+        sampleRows.push(rowData);
+    }
+  });
+
+  console.log("Distinct Types:", Array.from(distinctTypes));
+  console.log("Sample Rows:", JSON.stringify(sampleRows, null, 2));
 }
 
-inspectExcel();
+analyzeExcel();

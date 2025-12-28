@@ -3,18 +3,18 @@
 import { createClient } from "@supabase/supabase-js";
 import fs from "fs/promises";
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-console.log("Supabase URL present:", !!process.env.SUPABASE_URL);
-console.log("Supabase Key present:", !!process.env.SUPABASE_ANON_KEY);
+console.log("Supabase URL present:", !!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL));
+console.log("Supabase Key present:", !!(process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY));
 
 export async function getProposalsAction(
   page = 1, 
   pageSize = 20, 
   search = "", 
-  sortField = "proposal_no", 
+  sortField = "order_no", 
   sortOrder = "desc",
   filters?: {
     status?: string[],
@@ -198,7 +198,9 @@ export async function getCompaniesAction(
     // Apply sorting
     const isAsc = sortOrder === "asc";
     
-    if (sortField) {
+    if (sortField === "code") {
+        query = query.order("code", { ascending: isAsc });
+    } else if (sortField) {
         query = query.order(sortField, { ascending: isAsc });
     } else {
         query = query
@@ -219,7 +221,7 @@ export async function getCompaniesAction(
     };
   } catch (error) {
     console.error("Get Companies Error:", error);
-    return { success: false, error: "Şirketler getirilemedi." };
+    return { success: false, error: `Şirketler getirilemedi: ${(error as any)?.message || error}` };
   }
 }
 
@@ -249,7 +251,7 @@ export async function getPersonsAction(companyId?: string, page = 1, pageSize = 
       .from("persons")
       .select(`
         *,
-        company:companies (name),
+        company:companies (name, tax_no, tax_office),
         representative:users (first_name, last_name)
       `, { count: "exact" });
 
@@ -266,7 +268,9 @@ export async function getPersonsAction(companyId?: string, page = 1, pageSize = 
     // Apply sorting
     const isAsc = sortOrder === "asc";
     
-    if (sortField) {
+    if (sortField === "code") {
+        query = query.order("code", { ascending: isAsc });
+    } else if (sortField) {
         query = query.order(sortField, { ascending: isAsc });
     } else {
         query = query

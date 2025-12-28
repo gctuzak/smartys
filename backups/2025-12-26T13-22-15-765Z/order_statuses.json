@@ -1,0 +1,56 @@
+[
+  {
+    "id": "0b8c3792-22d8-428d-a9e2-1be5618abaa3",
+    "name": "Beklemede",
+    "color": "#f59e0b",
+    "order": 1,
+    "is_default": true,
+    "is_active": true,
+    "created_at": "2025-12-26T08:12:17.610Z"
+  },
+  {
+    "id": "7dcaf602-26ca-41e8-ae05-3a96cfe365b8",
+    "name": "Onaylandı",
+    "color": "#3b82f6",
+    "order": 2,
+    "is_default": false,
+    "is_active": true,
+    "created_at": "2025-12-26T08:12:17.704Z"
+  },
+  {
+    "id": "afa9b061-c284-49dc-ad6e-bdadbb3062e9",
+    "name": "Hazırlanıyor",
+    "color": "#8b5cf6",
+    "order": 3,
+    "is_default": false,
+    "is_active": true,
+    "created_at": "2025-12-26T08:12:17.794Z"
+  },
+  {
+    "id": "d5bdbc62-a067-40c9-b3e0-09832fa15a15",
+    "name": "Kargolandı",
+    "color": "#0ea5e9",
+    "order": 4,
+    "is_default": false,
+    "is_active": true,
+    "created_at": "2025-12-26T08:12:17.891Z"
+  },
+  {
+    "id": "4fdeb891-2d4b-480d-8be3-a19a04fbffb7",
+    "name": "Tamamlandı",
+    "color": "#22c55e",
+    "order": 5,
+    "is_default": false,
+    "is_active": true,
+    "created_at": "2025-12-26T08:12:17.984Z"
+  },
+  {
+    "id": "d2c735bd-a6d2-4ff8-ba10-9ae8ed1671b1",
+    "name": "İptal",
+    "color": "#ef4444",
+    "order": 6,
+    "is_default": false,
+    "is_active": true,
+    "created_at": "2025-12-26T08:12:18.079Z"
+  }
+]

@@ -11,7 +11,7 @@ import { OrderDetailModal } from "@/components/orders/order-detail-modal";
 import { FilterBar, FilterState, FilterOption } from "@/components/shared/filter-bar";
 
 const ORDER_STATUS_OPTIONS: FilterOption[] = [
-  { value: 'pending', label: 'Beklemede' },
+  { value: 'Hazırlanıyor', label: 'Hazırlanıyor' },
   { value: 'completed', label: 'Tamamlandı' },
   { value: 'cancelled', label: 'İptal' },
 ];
@@ -114,6 +114,7 @@ export default function OrdersPage() {
               className="w-full md:w-auto"
               statusOptions={ORDER_STATUS_OPTIONS}
               onApply={setFilters}
+              filterState={filters}
             />
           </div>
         </div>

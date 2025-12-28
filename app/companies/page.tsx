@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Search, Loader2, Building2, Trash2, Edit, Plus, ArrowUpDown, ArrowUp, ArrowDown, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { CompanyModal } from "@/components/companies/company-modal";
 import { toast } from "sonner";
 
 export default function CompaniesPage() {
+  const router = useRouter();
   const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -147,7 +149,7 @@ export default function CompaniesPage() {
             <TableBody>
               {companies.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                     Şirket bulunamadı.
                   </TableCell>
                 </TableRow>
@@ -158,7 +160,7 @@ export default function CompaniesPage() {
                     className="cursor-pointer hover:bg-gray-50"
                     onClick={() => handleEdit(company)}
                   >
-                    <TableCell className="font-mono text-sm">{company.code || "-"}</TableCell>
+                    <TableCell className="font-mono text-sm">{company.code?.replace(/^O/, '') || "-"}</TableCell>
                     <TableCell className="font-medium flex items-center gap-2">
                       <Building2 className="w-4 h-4 text-gray-400" />
                       {company.name}

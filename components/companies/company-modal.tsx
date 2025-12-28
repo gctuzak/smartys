@@ -48,6 +48,7 @@ export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyMod
     notes: "",
     authorized_person: "",
     representative_id: "",
+    currentBalance: "",
   });
 
   // Debounced search for users
@@ -153,6 +154,7 @@ export function CompanyModal({ isOpen, onClose, company, onSuccess }: CompanyMod
         notes: "",
         authorized_person: "",
         representative_id: "",
+        currentBalance: "",
       });
     }
   }, [company, isOpen]);

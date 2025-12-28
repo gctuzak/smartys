@@ -41,20 +41,28 @@ interface FilterBarProps {
   paymentStatusOptions?: FilterOption[]
   onApply: (filters: FilterState) => void
   className?: string
+  filterState?: FilterState
 }
 
 export function FilterBar({ 
   statusOptions = [], 
   paymentStatusOptions = [], 
   onApply,
-  className 
+  className,
+  filterState
 }: FilterBarProps) {
   const [open, setOpen] = React.useState(false)
-  const [filters, setFilters] = React.useState<FilterState>({
+  const [filters, setFilters] = React.useState<FilterState>(filterState || {
     status: [],
     paymentStatus: [],
     dateRange: {}
   })
+
+  React.useEffect(() => {
+    if (filterState) {
+      setFilters(filterState)
+    }
+  }, [filterState])
 
   const [tempFilters, setTempFilters] = React.useState<FilterState>(filters)
 
