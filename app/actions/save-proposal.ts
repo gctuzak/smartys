@@ -144,8 +144,8 @@ export async function saveProposalAction(data: ParsedData) {
           .insert({
             first_name: firstName,
             last_name: lastName,
-            email: data.person.email,
-            phone: data.person.phone,
+            email1: data.person.email,
+            phone1: data.person.phone,
             title: data.person.title,
             company_id: companyId || null, // Can be null now
             code
@@ -155,10 +155,9 @@ export async function saveProposalAction(data: ParsedData) {
 
         if (createPersonError) {
           console.error("Create person error:", createPersonError);
-          // Don't fail the whole process if person creation fails, just log it?
-          // Or maybe throw? Let's throw for now to see issues.
-          // throw createPersonError; 
-          // Actually, if person creation fails (e.g. constraints), we might want to continue with just company
+          // If we fail to create a person, we should probably throw an error so the user knows something went wrong.
+          // Otherwise, we get a proposal without a person, which is confusing.
+          throw new Error(`Kişi oluşturulamadı: ${createPersonError.message}`);
         } else {
           personId = newPerson.id;
         }

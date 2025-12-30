@@ -41,14 +41,35 @@ export async function parseExcelAction(formData: FormData) {
         // Convert to string array, preserving empty cells as empty strings
         const cells = values.map(val => {
             if (val === null || val === undefined) return "";
+            
+            // Handle Rich Text (Array of objects)
+            if (Array.isArray(val)) {
+                return val.map(p => (p && typeof p === 'object' && 'text' in p) ? p.text : '').join('');
+            }
+
             if (typeof val === 'object') {
-                // Handle rich text or other objects
-                const cellVal = val as { text?: string; result?: string | number };
+                // Handle rich text object (not array) or hyperlink
+                const cellVal = val as { text?: string; result?: string | number; richText?: any[] };
+                
+                // ExcelJS Hyperlink or specific object
                 if ('text' in cellVal && typeof cellVal.text === 'string') return cellVal.text;
+                
+                // Formula result
                 if ('result' in cellVal && cellVal.result !== undefined) return String(cellVal.result);
+                
+                // RichText property inside object? (Rare but possible in some libs)
+                if ('richText' in cellVal && Array.isArray(cellVal.richText)) {
+                     return cellVal.richText.map((p: any) => p.text || '').join('');
+                }
+
+                // Date object
+                if (val instanceof Date) {
+                    return val.toLocaleDateString("tr-TR");
+                }
+
                 return JSON.stringify(val);
             }
-            return String(val);
+            return String(val).replace(/\u00A0/g, ' ').trim();
         });
 
         // Slice starting from index 1 because exceljs row.values[0] is typically empty/undefined

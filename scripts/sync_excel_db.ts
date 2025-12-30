@@ -1,4 +1,3 @@
-
 import ExcelJS from 'exceljs';
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
@@ -6,7 +5,6 @@ import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-// Use Service Role Key for admin rights (bypass RLS)
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -15,14 +13,12 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Helper to clean cell values
 function clean(val: any): string | null {
   if (!val) return null;
   const s = String(val).trim();
   return s === '' ? null : s;
 }
 
-// Helper to map phone type
 function mapPhoneType(val: any): string | null {
   const s = clean(val);
   if (!s) return null;
@@ -31,17 +27,44 @@ function mapPhoneType(val: any): string | null {
   return 'diger';
 }
 
-function getCodeInt(code: string | null): number | null {
-  if (!code) return null;
-  const numStr = code.replace(/[^0-9]/g, '');
-  const num = parseInt(numStr);
-  return isNaN(num) ? null : num;
+async function upsertBatch(table: string, items: any[], conflictTarget: string, updateMapCallback?: (item: any) => void) {
+    if (items.length === 0) return;
+    
+    console.log(`Upserting ${items.length} items to ${table} (Conflict Target: ${conflictTarget})...`);
+    const chunkSize = 100;
+    
+    for (let i = 0; i < items.length; i += chunkSize) {
+        const chunk = items.slice(i, i + chunkSize);
+        const { data, error } = await supabase
+            .from(table)
+            .upsert(chunk, { onConflict: conflictTarget, ignoreDuplicates: false })
+            .select();
+            
+        if (error) {
+            console.error(`Error upserting ${table} chunk ${i}-${i+chunkSize}:`, error.message);
+            // Retry one by one
+            console.log("Retrying one by one...");
+            for (const item of chunk) {
+                const { data: sData, error: sError } = await supabase
+                    .from(table)
+                    .upsert(item, { onConflict: conflictTarget })
+                    .select();
+                if (sError) {
+                    console.error(`Failed to upsert item (Code: ${item.code}):`, sError.message);
+                } else if (sData && updateMapCallback) {
+                    sData.forEach(updateMapCallback);
+                }
+            }
+        } else if (data && updateMapCallback) {
+            data.forEach(updateMapCallback);
+        }
+    }
+    console.log(`${table} batch completed.`);
 }
 
 async function syncExcelToDB() {
   console.log("Starting sync...");
   
-  // 1. Load Excel
   const workbook = new ExcelJS.Workbook();
   const filePath = '/Users/gunaycagrituzak/Desktop/smartys/smartys/excel_data/kapsamlliliste.xlsx';
   await workbook.xlsx.readFile(filePath);
@@ -51,7 +74,6 @@ async function syncExcelToDB() {
     return;
   }
 
-  // 2. Map Headers
   const headers: string[] = [];
   sheet.getRow(1).eachCell((cell, colNumber) => {
     headers[colNumber] = String(cell.value);
@@ -59,18 +81,10 @@ async function syncExcelToDB() {
   
   const col = (name: string) => headers.indexOf(name);
   
-  console.log("Header Indices:");
-  ['Kayıt ID', 'İlişki Türü', 'Kişi/Kurum Türü', 'Müşteri Adı'].forEach(h => {
-      console.log(`${h}: ${col(h)}`);
-  });
-
-  // 3. Fetch existing Companies for linking
-  const { data: existingCompanies } = await supabase
-    .from('companies')
-    .select('id, name, code');
-    
-  const companyMap = new Map<string, string>(); // Name -> ID
-  const companyCodeMap = new Map<string, string>(); // Code -> ID
+  // 3. Fetch existing Companies
+  const { data: existingCompanies } = await supabase.from('companies').select('id, name, code');
+  const companyMap = new Map<string, string>(); 
+  const companyCodeMap = new Map<string, string>();
   
   if (existingCompanies) {
     existingCompanies.forEach(c => {
@@ -79,9 +93,9 @@ async function syncExcelToDB() {
     });
   }
 
-  // 4. Process Companies (O-prefix)
+  // 4. Process Companies
   console.log("Processing Companies...");
-  const companiesToUpsert: any[] = [];
+  const companiesMap = new Map<string, any>();
   
   sheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return;
@@ -89,31 +103,15 @@ async function syncExcelToDB() {
     const idVal = clean(row.getCell(col('Kayıt ID')).value);
     const typeVal = clean(row.getCell(col('İlişki Türü')).value);
     const categoryVal = clean(row.getCell(col('Kişi/Kurum Türü')).value);
-    
-    if (rowNumber < 5) {
-        console.log(`Row ${rowNumber}: ID='${idVal}', Type='${typeVal}', Cat='${categoryVal}'`);
-    }
-
-    // Identify Company
     let name = clean(row.getCell(col('Müşteri Adı')).value);
-    
-    // Safety checks
     const isBadName = !name || name === 'Bay' || name === 'Bayan' || name.length < 2;
-
-    // Identify Company: ID starts with 'O' OR Type implies Company
     const isCompany = !isBadName && ((idVal && idVal.startsWith('O')) || (typeVal !== 'Kişi'));
     
-    if (isCompany) {
-      if (!name) return; // Skip if no name
-
-      const code = idVal || `O-${Date.now()}-${rowNumber}`; // Fallback if missing
+    if (isCompany && name) {
+      const code = (idVal || `O-${Date.now()}-${rowNumber}`).trim();
+      if (code.length > 30 && !code.startsWith('O-')) return;
       
-      if (code.length > 30 && !code.startsWith('O-')) {
-         console.warn(`Skipping suspicious code: ${code} for ${name}`);
-         return;
-      }
-      
-      const companyData = {
+      const companyData: any = {
         code: code,
         name: name,
         type: categoryVal,
@@ -133,70 +131,52 @@ async function syncExcelToDB() {
         tax_no: clean(row.getCell(col('Vergi No:')).value),
         website: clean(row.getCell(col('Web Sayfası')).value),
         authorized_person: clean(row.getCell(col('Yetkili')).value),
-        // representative_id: ... skip for now
       };
-
-      companiesToUpsert.push(companyData);
+      
+      const existingId = companyCodeMap.get(code);
+      if (existingId) companyData.id = existingId;
+      
+      companiesMap.set(code, companyData);
     }
   });
 
-  console.log(`Total companies found: ${companiesToUpsert.length}`);
+  const allCompanies = Array.from(companiesMap.values());
+  const companiesWithId = allCompanies.filter(c => c.id);
+  const companiesWithoutId = allCompanies.filter(c => !c.id);
 
-  // Deduplicate companies by code
-  const uniqueCompaniesMap = new Map();
-  companiesToUpsert.forEach(c => {
-    if (c.code) {
-        if (uniqueCompaniesMap.has(c.code)) {
-            // console.log(`Duplicate company code: ${c.code}`);
-        }
-        uniqueCompaniesMap.set(c.code, c);
-    }
-  });
-  const uniqueCompanies = Array.from(uniqueCompaniesMap.values());
-  console.log(`Unique companies to upsert: ${uniqueCompanies.length}`);
+  const updateCompanyMap = (c: any) => {
+      if (c.name) companyMap.set(c.name.trim().toLowerCase(), c.id);
+      if (c.code) companyCodeMap.set(c.code, c.id);
+  };
 
-  if (uniqueCompanies.length > 0) {
-    console.log(`Upserting ${uniqueCompanies.length} companies...`);
-    
-    // Upsert in chunks to be safe
-    const chunkSize = 500;
-    for (let i = 0; i < uniqueCompanies.length; i += chunkSize) {
-      const chunk = uniqueCompanies.slice(i, i + chunkSize);
-      const { data, error } = await supabase
-        .from('companies')
-        .upsert(chunk, { onConflict: 'code' })
-        .select();
+  await upsertBatch('companies', companiesWithId, 'id', updateCompanyMap);
+  await upsertBatch('companies', companiesWithoutId, 'code', updateCompanyMap);
 
-      if (error) {
-        console.error("Error upserting companies chunk:", error);
-      } else if (data) {
-        data.forEach(c => {
-          if (c.name) companyMap.set(c.name.trim().toLowerCase(), c.id);
-          if (c.code) companyCodeMap.set(c.code, c.id);
-        });
-      }
-    }
-    console.log("Companies upserted (chunks completed).");
+  // 5. Process Persons
+  console.log("Processing Persons...");
+  
+  // Fetch existing Persons
+  const { data: existingPersons } = await supabase.from('persons').select('id, code');
+  const personCodeMap = new Map<string, string>();
+  if (existingPersons) {
+      existingPersons.forEach(p => {
+          if (p.code) personCodeMap.set(p.code, p.id);
+      });
   }
 
-  // 5. Process Persons (K-prefix)
-  console.log("Processing Persons...");
-  const personsToUpsert: any[] = [];
+  const personsMap = new Map<string, any>();
   
   sheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return;
     
     const idVal = clean(row.getCell(col('Kayıt ID')).value);
     const typeVal = clean(row.getCell(col('İlişki Türü')).value);
-    
-    // Identify Person
     const isPerson = (idVal && idVal.startsWith('K')) || (typeVal === 'Kişi');
     
     if (isPerson) {
-      const fullName = clean(row.getCell(col('Müşteri Adı')).value); // In sample data, Name is here
+      const fullName = clean(row.getCell(col('Müşteri Adı')).value);
       if (!fullName) return;
       
-      // Split Name
       const parts = fullName.split(' ');
       let firstName = fullName;
       let lastName = '';
@@ -205,17 +185,15 @@ async function syncExcelToDB() {
         firstName = parts.join(' ');
       }
 
-      const code = idVal || `K-${Date.now()}-${rowNumber}`;
+      const code = (idVal || `K-${Date.now()}-${rowNumber}`).trim();
       const companyName = clean(row.getCell(col('Kişinin İşyeri')).value);
       let companyId = null;
-      
       if (companyName) {
         companyId = companyMap.get(companyName.trim().toLowerCase()) || null;
       }
 
-      const personData = {
+      const personData: any = {
         code: code,
-        code_int: getCodeInt(code),
         first_name: firstName,
         last_name: lastName,
         company_id: companyId,
@@ -234,39 +212,21 @@ async function syncExcelToDB() {
         post_code: clean(row.getCell(col('Posta Kodu')).value),
         notes: clean(row.getCell(col('Notlar')).value),
         tckn: clean(row.getCell(col('TC Kimlik No')).value),
-        // representative_id: ... skip
       };
+      
+      const existingId = personCodeMap.get(code);
+      if (existingId) personData.id = existingId;
 
-      personsToUpsert.push(personData);
+      personsMap.set(code, personData);
     }
   });
 
-  console.log(`Total persons found: ${personsToUpsert.length}`);
+  const allPersons = Array.from(personsMap.values());
+  const personsWithId = allPersons.filter(p => p.id);
+  const personsWithoutId = allPersons.filter(p => !p.id);
 
-  // Deduplicate persons by code
-  const uniquePersonsMap = new Map();
-  personsToUpsert.forEach(p => {
-    if (p.code) uniquePersonsMap.set(p.code, p);
-  });
-  const uniquePersons = Array.from(uniquePersonsMap.values());
-  console.log(`Unique persons to upsert: ${uniquePersons.length}`);
-
-  if (uniquePersons.length > 0) {
-    console.log(`Upserting ${uniquePersons.length} persons...`);
-    const chunkSize = 500;
-    for (let i = 0; i < uniquePersons.length; i += chunkSize) {
-      const chunk = uniquePersons.slice(i, i + chunkSize);
-      const { data, error } = await supabase
-        .from('persons')
-        .upsert(chunk, { onConflict: 'code' })
-        .select();
-        
-      if (error) {
-        console.error("Error upserting persons chunk:", error);
-      }
-    }
-    console.log("Persons upserted (chunks completed).");
-  }
+  await upsertBatch('persons', personsWithId, 'id');
+  await upsertBatch('persons', personsWithoutId, 'code');
   
   console.log("Sync complete.");
 }
