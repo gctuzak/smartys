@@ -230,7 +230,7 @@ export function ProposalDetailModal({ isOpen, onClose, proposalId, onUpdate, ini
         toast.success("Değişiklikler başarıyla kaydedildi");
         if (onUpdate) onUpdate();
       } else {
-        toast.error("Değişiklikler kaydedilemedi");
+        toast.error(result.error || "Değişiklikler kaydedilemedi");
       }
     } catch (error) {
       toast.error("Bir hata oluştu");

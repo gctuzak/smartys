@@ -185,6 +185,7 @@ export const stokHareketleri = pgTable("stok_hareketleri", {
 export const orders = pgTable("orders", {
   id: uuid("id").defaultRandom().primaryKey(),
   orderNo: text("order_no").unique().notNull(),
+  orderNoInt: integer("order_no_int"), // Generated column for sorting
   proposalId: uuid("proposal_id").references(() => proposals.id),
   companyId: uuid("company_id").references(() => companies.id),
   personId: uuid("person_id").references(() => persons.id),

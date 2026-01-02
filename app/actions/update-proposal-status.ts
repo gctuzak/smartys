@@ -59,21 +59,32 @@ export async function updateProposalStatusAction(id: string, status: string) {
           }
 
           // Generate new Order No
-          const { data: orders } = await supabase
-            .from('orders')
-            .select('order_no');
+          let nextOrderNo = '1000';
+          
+          const { data: rpcData, error: rpcError } = await supabase.rpc('get_next_order_no');
+          
+          if (!rpcError && rpcData) {
+            nextOrderNo = rpcData;
+          } else {
+            console.error('Error calling get_next_order_no, falling back to query:', rpcError);
+            
+            const { data: orders } = await supabase
+              .from('orders')
+              .select('order_no')
+              .order('created_at', { ascending: false })
+              .limit(50);
 
-          let maxOrderNo = 0;
-          if (orders) {
-            orders.forEach(o => {
-              const num = parseInt(o.order_no);
-              if (!isNaN(num) && num > maxOrderNo) {
-                maxOrderNo = num;
-              }
-            });
+            let maxOrderNo = 0;
+            if (orders) {
+              orders.forEach(o => {
+                const num = parseInt(o.order_no);
+                if (!isNaN(num) && num > maxOrderNo) {
+                  maxOrderNo = num;
+                }
+              });
+            }
+            nextOrderNo = (maxOrderNo > 0 ? maxOrderNo + 1 : 1000).toString();
           }
-
-          const nextOrderNo = (maxOrderNo > 0 ? maxOrderNo + 1 : 1000).toString();
 
           // Create Order
           const { data: newOrder, error: createOrderError } = await supabase
