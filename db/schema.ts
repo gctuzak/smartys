@@ -145,6 +145,7 @@ export const faturalar = pgTable("faturalar", {
   id: uuid("id").defaultRandom().primaryKey(),
   companyId: uuid("company_id").references(() => companies.id),
   faturaNo: text("fatura_no").unique().notNull(),
+  orderId: uuid("order_id").references(() => orders.id), // Link to order
   tarih: timestamp("tarih").defaultNow().notNull(),
   sonOdemeTarihi: timestamp("son_odeme_tarihi"),
   tip: text("tip").notNull(), // SATIS, ALIS, IADE

@@ -1,5 +1,6 @@
 import { getInvoicesAction } from "@/app/actions/accounting";
 import InvoiceList from "@/components/accounting/invoice-list";
+import CreateFromOrderButton from "@/components/accounting/create-from-order-button";
 
 export default async function SalesInvoicesPage() {
   const { data: invoices, error } = await getInvoicesAction(1, 50, "SATIS");
@@ -13,6 +14,8 @@ export default async function SalesInvoicesPage() {
       title="Satış Faturaları" 
       invoices={invoices || []} 
       type="SATIS"
-    />
+    >
+      <CreateFromOrderButton />
+    </InvoiceList>
   );
 }

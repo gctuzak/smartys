@@ -16,6 +16,7 @@ export interface CreateInvoiceParams {
   para_birimi?: string;
   doviz_kuru?: number;
   notlar?: string;
+  order_id?: string;
   items: {
     urun_id?: string;
     aciklama: string;
@@ -42,6 +43,37 @@ export async function createInvoiceAction(params: CreateInvoiceParams) {
     if (error) {
       console.error("Fatura oluşturma hatası:", error);
       return { success: false, error: error.message };
+    }
+
+    // If order_id is present, link it
+    if (params.order_id && data) {
+      // The RPC might return just ID string or object depending on version.
+      // Looking at migration 025, it returns json object {"success": true} if successful?
+      // Wait, migration 012 returns uuid. Migration 025 returns json.
+      // Migration 025: RETURNS json AS $$ ... RETURN json_build_object('success', true);
+      // Wait, if it returns json, I don't get the ID!
+      // Migration 025 has: RETURNING id INTO v_fatura_id; ... but returns json_build_object('success', true).
+      // This is a problem if I need the ID.
+      // Let's check migration 025 again.
+      
+      // Ah, I need to fix the RPC to return the ID if I want to use it.
+      // OR, find the invoice by number.
+      
+      const { data: invoice } = await supabase
+        .from("faturalar")
+        .select("id")
+        .eq("fatura_no", params.fatura_no)
+        .single();
+        
+      if (invoice) {
+        await supabase
+          .from("faturalar")
+          .update({ order_id: params.order_id })
+          .eq("id", invoice.id);
+          
+        // Also update order status to 'completed' or similar if needed?
+        // Maybe 'invoiced'? But status is text.
+      }
     }
 
     revalidatePath("/muhasebe/faturalar");
@@ -83,6 +115,77 @@ export async function updateInvoiceAction(id: string, params: CreateInvoiceParam
   } catch (error: any) {
     console.error("Beklenmeyen hata:", error);
     return { success: false, error: error.message };
+  }
+}
+
+export async function getOrderForInvoiceAction(orderId: string) {
+  try {
+    // 1. Get Order Details
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .select(`
+        id,
+        order_no,
+        company_id,
+        amount,
+        currency,
+        proposal_id,
+        project_name
+      `)
+      .eq("id", orderId)
+      .single();
+
+    if (orderError) throw orderError;
+
+    let items: any[] = [];
+
+    // 2. If has proposal, get proposal items
+    if (order.proposal_id) {
+      const { data: proposalItems, error: itemsError } = await supabase
+        .from("proposal_items")
+        .select("*")
+        .eq("proposal_id", order.proposal_id)
+        .order("order", { ascending: true });
+
+      if (!itemsError && proposalItems) {
+        items = proposalItems.map(item => ({
+          product_id: null, // Proposal items don't strictly link to products table yet in this schema?
+          // Wait, proposal_items has description, unit_price, etc. but maybe not product_id?
+          // Checking schema: proposalItems has no product_id column in provided schema read.
+          // It has description, quantity, unit, unitPrice, etc.
+          aciklama: item.description,
+          miktar: Number(item.quantity),
+          birim: item.unit || "Adet",
+          birim_fiyat: Number(item.unit_price),
+          kdv_orani: 20, // Default or fetch if available
+          iskonto: 0
+        }));
+      }
+    } 
+    
+    // If no items found from proposal, use order total
+    if (items.length === 0) {
+      items.push({
+        product_id: null,
+        aciklama: `Sipariş #${order.order_no} - ${order.project_name || 'Genel'}`,
+        miktar: 1,
+        birim: "Adet",
+        birim_fiyat: Number(order.amount),
+        kdv_orani: 20,
+        iskonto: 0
+      });
+    }
+
+    return { 
+      success: true, 
+      data: {
+        order,
+        items
+      } 
+    };
+  } catch (error: any) {
+    console.error("Get Order For Invoice Error:", error);
+    return { success: false, error: "Sipariş bilgileri alınamadı." };
   }
 }
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Plus, Trash2, Save, Loader2, RefreshCw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { createInvoiceAction, updateInvoiceAction, getInvoiceDetailAction } from "@/app/actions/accounting";
+import { createInvoiceAction, updateInvoiceAction, getInvoiceDetailAction, getOrderForInvoiceAction } from "@/app/actions/accounting";
 import { createCompanyAction } from "@/app/actions/create-entity";
 import { getLatestRatesAction } from "@/app/actions/exchange-rates";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -117,6 +117,7 @@ export default function InvoiceBuilder({ initialInvoiceId }: InvoiceBuilderProps
 
       // Check for edit mode
       const paramId = searchParams.get("id");
+      const orderIdParam = searchParams.get("orderId");
       const targetId = invoiceId || paramId;
 
       if (targetId) {
@@ -153,6 +154,18 @@ export default function InvoiceBuilder({ initialInvoiceId }: InvoiceBuilderProps
             console.error("Fatura detayları alınamadı:", result.error);
             toast.error("Fatura bilgileri yüklenemedi.");
         }
+      } else if (orderIdParam) {
+          // Load from Order
+          const result = await getOrderForInvoiceAction(orderIdParam);
+          if (result.success && result.data) {
+              const { order, items } = result.data;
+              if (order.company_id) setSelectedCompanyId(order.company_id);
+              if (order.currency) setCurrency(order.currency as any);
+              if (items && items.length > 0) setItems(items);
+              if (order.project_name) setInvoiceNotes(`Proje: ${order.project_name}`);
+          } else {
+              toast.error(result.error || "Sipariş bilgileri yüklenemedi");
+          }
       }
 
       // Check for uploaded invoice data

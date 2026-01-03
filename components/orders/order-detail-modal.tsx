@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FileManager } from "@/components/shared/file-manager";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatCurrency } from "@/lib/utils";
 import { updateOrderAction } from "@/app/actions/update-order";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -115,10 +115,18 @@ export function OrderDetailModal({ isOpen, onClose, orderId, onUpdate }: OrderDe
         <div className="flex items-center justify-between w-full pr-8">
           <span>Sipariş Detayı {order?.order_no ? '#' + order.order_no : ''}</span>
           {!loading && order && !isEditing && (
-            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-              <Pencil className="w-4 h-4 mr-2" />
-              Düzenle
-            </Button>
+            <div className="flex gap-2">
+                <Link href={`/muhasebe/faturalar/yeni?type=SATIS&orderId=${order.id}`} passHref>
+                    <Button variant="outline" size="sm">
+                        <FileText className="w-4 h-4 mr-2" />
+                        Fatura Oluştur
+                    </Button>
+                </Link>
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Düzenle
+                </Button>
+            </div>
           )}
         </div>
       }
@@ -273,10 +281,7 @@ export function OrderDetailModal({ isOpen, onClose, orderId, onUpdate }: OrderDe
                 <Banknote className="h-8 w-8 text-green-600 mb-2" />
                 <span className="text-sm text-gray-500">Tutar</span>
                 <span className="text-xl font-bold text-green-700">
-                    {Number(order.amount || 0).toLocaleString("tr-TR", { 
-                        style: 'currency', 
-                        currency: (order.currency || 'EUR').replace('TL', 'TRY')
-                    })}
+                    {formatCurrency(order.amount, order.currency)}
                 </span>
              </div>
              
@@ -329,7 +334,7 @@ export function OrderDetailModal({ isOpen, onClose, orderId, onUpdate }: OrderDe
                                 <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                               </p>
                               <p className="text-xs text-blue-700">
-                                  Teklif Tutarı: {Number(order.proposal.grand_total).toLocaleString("tr-TR", { style: 'currency', currency: (order.proposal.currency || 'EUR').replace('TL', 'TRY') })}
+                                  Teklif Tutarı: {formatCurrency(order.proposal.grand_total, order.proposal.currency)}
                               </p>
                           </div>
                       </div>

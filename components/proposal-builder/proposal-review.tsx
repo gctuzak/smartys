@@ -37,6 +37,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { formatCurrency } from "@/lib/utils";
 
 interface ProposalReviewProps {
   initialData: ParsedData;
@@ -909,37 +910,19 @@ export function ProposalReview({ initialData, originalFile, onSuccess, isEditing
                 <div className="flex justify-between items-center text-gray-500">
                     <span className="font-medium">Ara Toplam</span>
                     <span className="font-semibold text-gray-900">
-                        {(() => {
-                            try {
-                                return data.proposal.totalAmount.toLocaleString("tr-TR", { style: "currency", currency: (data.proposal.currency || "EUR").replace('TL', 'TRY') });
-                            } catch {
-                                return `${data.proposal.totalAmount.toLocaleString("tr-TR")} ${data.proposal.currency}`;
-                            }
-                        })()}
+                        {formatCurrency(data.proposal.totalAmount, data.proposal.currency)}
                     </span>
                 </div>
                 <div className="flex justify-between items-center text-gray-500">
                     <span className="font-medium">KDV (%{data.proposal.vatRate ?? 20})</span>
                     <span className="font-semibold text-gray-900">
-                        {(() => {
-                            try {
-                                return (data.proposal.vatAmount ?? 0).toLocaleString("tr-TR", { style: "currency", currency: (data.proposal.currency || "EUR").replace('TL', 'TRY') });
-                            } catch {
-                                return `${(data.proposal.vatAmount ?? 0).toLocaleString("tr-TR")} ${data.proposal.currency}`;
-                            }
-                        })()}
+                        {formatCurrency(data.proposal.vatAmount ?? 0, data.proposal.currency)}
                     </span>
                 </div>
                 <div className="border-t border-gray-100 pt-4 flex justify-between items-center">
                     <span className="text-lg font-bold text-gray-900">Genel Toplam</span>
                     <span className="text-2xl font-bold text-blue-600">
-                        {(() => {
-                            try {
-                                return (data.proposal.grandTotal ?? 0).toLocaleString("tr-TR", { style: "currency", currency: (data.proposal.currency || "EUR").replace('TL', 'TRY') });
-                            } catch {
-                                return `${(data.proposal.grandTotal ?? 0).toLocaleString("tr-TR")} ${data.proposal.currency}`;
-                            }
-                        })()}
+                        {formatCurrency(data.proposal.grandTotal ?? 0, data.proposal.currency)}
                     </span>
                 </div>
             </div>

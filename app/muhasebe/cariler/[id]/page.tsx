@@ -21,6 +21,7 @@ import { runMigration022Action } from "@/app/actions/migration";
 import { TransactionModal } from "@/components/accounting/transaction-modal";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
+import { formatCurrency } from "@/lib/utils";
 
 export default function CompanyAccountPage() {
   const params = useParams();
@@ -253,7 +254,7 @@ export default function CompanyAccountPage() {
                             {t.doviz_tutari && (
                               <>
                                 <span className="text-xs font-medium text-blue-600">
-                                  {Number(t.doviz_tutari).toLocaleString("tr-TR", { style: 'currency', currency: t.doviz_turu || 'USD' })}
+                                  {formatCurrency(t.doviz_tutari, t.doviz_turu)}
                                 </span>
                                 {t.doviz_kuru && (
                                   <span className="text-[10px] text-gray-400">
@@ -272,7 +273,7 @@ export default function CompanyAccountPage() {
                             {t.doviz_tutari && (
                               <>
                                 <span className="text-xs font-medium text-blue-600">
-                                  {Number(t.doviz_tutari).toLocaleString("tr-TR", { style: 'currency', currency: t.doviz_turu || 'USD' })}
+                                  {formatCurrency(t.doviz_tutari, t.doviz_turu)}
                                 </span>
                                 {t.doviz_kuru && (
                                   <span className="text-[10px] text-gray-400">
